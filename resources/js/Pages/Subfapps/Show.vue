@@ -162,9 +162,31 @@ const props = defineProps({
                             </div>
                         </div>
                         <!-- Subfapp Info with improved text -->
-                        <div class="ml-4">
+                        <div class="ml-4 flex-grow">
                             <h1 class="text-4xl font-bold text-gray-900 leading-tight">{{ subfapp.display_name }}</h1>
                             <p class="text-sm font-medium text-gray-600">f/{{ subfapp.name }}</p>
+                        </div>
+                        
+                        <!-- Desktop Join/Leave Button -->
+                        <div class="hidden lg:flex items-center">
+                            <Link
+                                v-if="!hasJoined"
+                                :href="route('subfapp.join', subfapp.id)"
+                                method="post"
+                                as="button"
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-1.5 rounded-full transition-colors duration-200 text-sm"
+                            >
+                                Join
+                            </Link>
+                            <Link
+                                v-else
+                                :href="route('subfapp.leave', subfapp.id)"
+                                method="delete"
+                                as="button"
+                                class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-1.5 rounded-full transition-colors duration-200 text-sm"
+                            >
+                                Leave
+                            </Link>
                         </div>
                     </div>
 
@@ -174,9 +196,10 @@ const props = defineProps({
 
         <!-- Main Content -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex gap-6">
-                <!-- Posts List -->
-                <div class="flex-1 space-y-4">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Left Column: Posts -->
+                <div class="flex-1 space-y-4 order-2 lg:order-1">
+                    <!-- Posts List -->
                     <!-- Sort Options -->
                     <div class="flex items-center gap-4 -mb-2">
                         <button
@@ -320,106 +343,101 @@ const props = defineProps({
                     </div>
                 </div>
 
-                <!-- Sidebar -->
-                <div class="w-80 hidden lg:block space-y-4 relative">
-                    <!-- Join Community Card -->
-                    <div class="bg-white sm:rounded-xl border border-gray-100 shadow-sm overflow-hidden sticky top-4">
-                        <div class="p-4">
-                            <Link
-    v-if="!hasJoined"
-    :href="route('subfapp.join', subfapp.id)"
-    method="post"
-    as="button"
-    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-full transition-colors duration-200"
->
-    Join Community
-</Link>
-<div v-else class="space-y-2">
-    <div class="text-center text-sm text-gray-600">
-        You are a member
-    </div>
-    <Link
-        :href="route('subfapp.leave', subfapp.id)"
-        method="delete"
-        as="button"
-        class="w-full bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full transition-colors duration-200 text-sm"
-    >
-        Leave Community
-    </Link>
-</div>
-                            <p class="text-xs text-center text-gray-500 mt-2">Join to post and interact with the community</p>
+                <!-- Right Column: Community Info -->
+                <div class="w-full lg:w-80 space-y-4 order-1 lg:order-2">
+                    <!-- Mobile Join Button -->
+                    <div class="block lg:hidden">
+                        <div class="bg-white sm:rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div class="p-4">
+                                <Link
+                                    v-if="!hasJoined"
+                                    :href="route('subfapp.join', subfapp.id)"
+                                    method="post"
+                                    as="button"
+                                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-full transition-colors duration-200"
+                                >
+                                    Join Community
+                                </Link>
+                                <div v-else class="space-y-2">
+                                    <div class="text-center text-sm text-gray-600">
+                                        You are a member
+                                    </div>
+                                    <Link
+                                        :href="route('subfapp.leave', subfapp.id)"
+                                        method="delete"
+                                        as="button"
+                                        class="w-full bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full transition-colors duration-200 text-sm"
+                                    >
+                                        Leave Community
+                                    </Link>
+                                </div>
+                                <p class="text-xs text-center text-gray-500 mt-2">Join to post and interact with the community</p>
+                            </div>
                         </div>
                     </div>
-                    <!-- About Community -->
-                    <div class="bg-white sm:rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+
+                    <!-- About Community (hidden on mobile) -->
+                    <div class="hidden lg:block bg-white sm:rounded-xl border border-gray-100 shadow-sm overflow-hidden sticky top-4">
                         <div class="bg-blue-600 px-4 py-3 border-b border-blue-500">
                             <h2 class="text-base font-semibold text-white">About Community</h2>
                         </div>
                         <div class="p-4 space-y-4">
                             <p class="text-sm text-gray-600">{{ subfapp.description }}</p>
 
+                            <!-- Stats -->
+                            <div class="flex gap-4">
+                                <!-- Members -->
+                                <div class="bg-blue-50 rounded-lg p-3 text-center flex-1">
+                                    <div class="font-medium text-blue-900 text-lg">{{ membersCount }}</div>
+                                    <div class="text-blue-600">Members</div>
+                                </div>
+                                <!-- Posts -->
+                                <div class="bg-blue-50 rounded-lg p-3 text-center flex-1">
+                                    <div class="font-medium text-blue-900 text-lg">{{ posts.total || 0 }}</div>
+                                    <div class="text-blue-600">Posts</div>
+                                </div>
+                            </div>
+
+                            <!-- Created Info -->
+                            <div class="mt-4 space-y-2">
+                                <div class="flex items-center gap-2 text-sm text-gray-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>Created {{ new Date(subfapp.created_at).toLocaleDateString() }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-gray-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    <span>Created by u/{{ subfapp.creator?.name }}</span>
+                                </div>
+                            </div>
+
                             <!-- Community Rules -->
                             <div class="border-t border-gray-100 pt-4">
                                 <h3 class="text-base font-semibold text-gray-900 mb-3">Community Rules</h3>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-2">
-                                        <span class="text-sm font-medium text-gray-700">1.</span>
-                                        <p class="text-sm text-gray-600">Be respectful to others</p>
-                                    </li>
-                                    <li class="flex items-start gap-2">
-                                        <span class="text-sm font-medium text-gray-700">2.</span>
-                                        <p class="text-sm text-gray-600">No spam or self-promotion</p>
-                                    </li>
-                                    <li class="flex items-start gap-2">
-                                        <span class="text-sm font-medium text-gray-700">3.</span>
-                                        <p class="text-sm text-gray-600">Post relevant content only</p>
-                                    </li>
+                                <ul class="text-sm text-gray-600 space-y-2">
+                                    <li>1. Be respectful to others</li>
+                                    <li>2. No hate speech or bullying</li>
+                                    <li>3. No spam or self-promotion</li>
+                                    <li>4. Follow Reddit's content policy</li>
                                 </ul>
-                            </div>
-
-                            <!-- Community Stats -->
-                            <div class="border-t border-gray-100 pt-4">
-                                <div class="grid grid-cols-2 gap-4 text-sm">
-                                    <!-- Members -->
-                                    <div class="bg-blue-50 rounded-lg p-3 text-center">
-                                        <div class="font-medium text-blue-900 text-lg">{{ membersCount }}</div>
-                                        <div class="text-blue-600">Members</div>
-                                    </div>
-                                    <!-- Posts -->
-                                    <div class="bg-blue-50 rounded-lg p-3 text-center">
-                                        <div class="font-medium text-blue-900 text-lg">{{ posts.total || 0 }}</div>
-                                        <div class="text-blue-600">Posts</div>
-                                    </div>
-                                </div>
-
-                                <!-- Created Info -->
-                                <div class="mt-4 space-y-2">
-                                    <div class="flex items-center gap-2 text-sm text-gray-500">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <span>Created {{ new Date(subfapp.created_at).toLocaleDateString() }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-sm text-gray-500">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        <span>Created by u/{{ subfapp.creator?.name }}</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Full Screen Modal -->
-                <div
-                    v-if="selectedImage"
-                    class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
-                    @click="closeImage"
-                >
-                    <img :src="selectedImage" alt="Full size image" class="max-w-full max-h-full object-contain">
-                </div>
             </div>
+        </div>
+
+        
+        <!-- Full Screen Modal -->
+        <div
+            v-if="selectedImage"
+            class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+            @click="closeImage"
+        >
+            <img :src="selectedImage" alt="Full size image" class="max-w-full max-h-full object-contain">
         </div>
     </MainLayout>
 </template>
