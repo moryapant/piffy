@@ -31,7 +31,7 @@ class PostController extends Controller
             ->paginate(20);
 
         // Get popular communities
-        $communities = Subfapp::withCount('posts')
+        $communities = Subfapp::withCount(['posts', 'users'])
             ->orderBy('posts_count', 'desc')
             ->take(5)
             ->get()
@@ -41,7 +41,9 @@ class PostController extends Controller
                     'name' => $community->name,
                     'display_name' => $community->display_name,
                     'icon' => $community->cover_image,
-                    'member_count' => $community->posts_count
+                    'avtaar' => $community->icon,
+                    'posts_count' => $community->posts_count,
+                    'member_count' => $community->users_count
                 ];
             });
 

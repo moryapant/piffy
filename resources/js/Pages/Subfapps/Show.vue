@@ -7,10 +7,16 @@ import PostVoteButtons from '@/Components/PostVoteButtons.vue';
 import { timeAgo } from '@/utils/dateUtils';
 
 const coverImageInput = ref(null);
+const avatarImageInput = ref(null);
 const isHoveringCover = ref(false);
+const isHoveringAvatar = ref(false);
 
 const coverForm = useForm({
     cover_image: null,
+});
+
+const avatarForm = useForm({
+    avatar: null,
 });
 
 const selectedImage = ref(null);
@@ -42,6 +48,14 @@ const props = defineProps({
     },
     posts: {
         type: Object,
+        required: true
+    },
+    hasJoined: {
+        type: Boolean,
+        required: true
+    },
+    membersCount: {
+        type: Number,
         required: true
     }
 });
@@ -82,15 +96,30 @@ const props = defineProps({
                     </svg>
                     <span>Change Cover</span>
                 </button>
-                <!-- Hidden file input -->
+                <!-- Hidden file inputs -->
                 <input
                     ref="coverImageInput"
                     type="file"
                     accept=".jpg,.jpeg,.png,.webp"
                     class="hidden"
-                    @change="e => {
+                    @change="(e) => {
                         coverForm.cover_image = e.target.files[0];
                         coverForm.post(route('subfapps.cover.update', subfapp.id), {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                e.target.value = null;
+                            }
+                        });
+                    }"
+                />
+                <input
+                    ref="avatarImageInput"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    class="hidden"
+                    @change="(e) => {
+                        avatarForm.avatar = e.target.files[0];
+                        avatarForm.post(route('subfapps.avatar.update', subfapp.id), {
                             preserveScroll: true,
                             onSuccess: () => {
                                 e.target.value = null;
@@ -104,9 +133,33 @@ const props = defineProps({
                     <!-- Left side with avatar and info -->
                     <div class="flex items-center space-x-4">
                         <!-- Subfapp Icon with improved visibility -->
-                        <div class="w-32 h-32 bg-white rounded-full flex items-center justify-center overflow-hidden -mt-16 border-4 border-white shadow-lg ring-2 ring-gray-100">
-                            <img v-if="subfapp.icon" :src="subfapp.icon" :alt="subfapp.display_name" class="w-full h-full object-cover" />
+                        <div 
+                            class="w-32 h-32 bg-white rounded-full flex items-center justify-center overflow-hidden -mt-16 border-4 border-white shadow-lg ring-2 ring-gray-100 relative group"
+                            @mouseenter="isHoveringAvatar = true"
+                            @mouseleave="isHoveringAvatar = false"
+                        >
+                            <img v-if="subfapp.icon" :src="`/storage/${subfapp.icon}`" :alt="subfapp.display_name" class="w-full h-full object-cover" />
                             <span v-else class="text-5xl font-bold text-gray-400">{{ subfapp.display_name[0] }}</span>
+                            
+                            <!-- Avatar Update Button (Only visible to creator when hovering) -->
+                            <div
+                                v-if="$page.props.auth.user?.id === subfapp.created_by"
+                                :class="[
+                                    'absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity duration-200',
+                                    isHoveringAvatar ? 'opacity-100' : 'opacity-0'
+                                ]"
+                            >
+                                <button
+                                    @click="() => avatarImageInput.click()"
+                                    class="text-white px-2 py-1 rounded-full text-xs font-medium transition-colors duration-200 hover:text-blue-200 flex items-center gap-1"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span>Change</span>
+                                </button>
+                            </div>
                         </div>
                         <!-- Subfapp Info with improved text -->
                         <div class="ml-4">
@@ -155,7 +208,13 @@ const props = defineProps({
                             {{ sort }}
                         </button>
                     </div>
-                    <div v-for="post in posts.data" :key="post.id"
+                    <div v-if="!hasJoined" class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
+                        <p class="text-gray-600">Join this community to see its posts</p>
+                    </div>
+                    <div v-else-if="posts.data.length === 0" class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
+                        <p class="text-gray-600">No posts yet</p>
+                    </div>
+                    <div v-else v-for="post in posts.data" :key="post.id"
                         class="overflow-hidden bg-white sm:rounded-xl border-y sm:border border-gray-100 shadow-sm transition-all duration-200 hover:border-blue-200 hover:shadow-md group">
                         <div class="p-3 sm:p-6">
                             <!-- Post Header -->
@@ -256,7 +315,7 @@ const props = defineProps({
                     </div>
 
                     <!-- Pagination -->
-                    <div class="mt-6">
+                    <div v-if="posts.data.length > 0" class="mt-6">
                         <Pagination :links="posts.links" />
                     </div>
                 </div>
@@ -266,9 +325,28 @@ const props = defineProps({
                     <!-- Join Community Card -->
                     <div class="bg-white sm:rounded-xl border border-gray-100 shadow-sm overflow-hidden sticky top-4">
                         <div class="p-4">
-                            <button class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-full transition-colors duration-200">
-                                Join Community
-                            </button>
+                            <Link
+    v-if="!hasJoined"
+    :href="route('subfapp.join', subfapp.id)"
+    method="post"
+    as="button"
+    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-full transition-colors duration-200"
+>
+    Join Community
+</Link>
+<div v-else class="space-y-2">
+    <div class="text-center text-sm text-gray-600">
+        You are a member
+    </div>
+    <Link
+        :href="route('subfapp.leave', subfapp.id)"
+        method="delete"
+        as="button"
+        class="w-full bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full transition-colors duration-200 text-sm"
+    >
+        Leave Community
+    </Link>
+</div>
                             <p class="text-xs text-center text-gray-500 mt-2">Join to post and interact with the community</p>
                         </div>
                     </div>
@@ -277,15 +355,34 @@ const props = defineProps({
                         <div class="bg-blue-600 px-4 py-3 border-b border-blue-500">
                             <h2 class="text-base font-semibold text-white">About Community</h2>
                         </div>
-                        <div class="p-4">
+                        <div class="p-4 space-y-4">
                             <p class="text-sm text-gray-600">{{ subfapp.description }}</p>
 
-                            <div class="mt-4 pt-4 border-t border-gray-100">
-                                <!-- Community Stats -->
+                            <!-- Community Rules -->
+                            <div class="border-t border-gray-100 pt-4">
+                                <h3 class="text-base font-semibold text-gray-900 mb-3">Community Rules</h3>
+                                <ul class="space-y-3">
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-sm font-medium text-gray-700">1.</span>
+                                        <p class="text-sm text-gray-600">Be respectful to others</p>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-sm font-medium text-gray-700">2.</span>
+                                        <p class="text-sm text-gray-600">No spam or self-promotion</p>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-sm font-medium text-gray-700">3.</span>
+                                        <p class="text-sm text-gray-600">Post relevant content only</p>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Community Stats -->
+                            <div class="border-t border-gray-100 pt-4">
                                 <div class="grid grid-cols-2 gap-4 text-sm">
                                     <!-- Members -->
                                     <div class="bg-blue-50 rounded-lg p-3 text-center">
-                                        <div class="font-medium text-blue-900 text-lg">{{ subfapp.member_count }}</div>
+                                        <div class="font-medium text-blue-900 text-lg">{{ membersCount }}</div>
                                         <div class="text-blue-600">Members</div>
                                     </div>
                                     <!-- Posts -->
@@ -295,83 +392,34 @@ const props = defineProps({
                                     </div>
                                 </div>
 
-                                <!-- Community Rules -->
-                                <div class="mt-4 pt-4 border-t border-gray-100">
-                                    <h3 class="font-medium text-gray-900 mb-2">Community Rules</h3>
-                                    <ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">
-                                        <li>Be respectful to others</li>
-                                        <li>No spam or self-promotion</li>
-                                        <li>Post relevant content only</li>
-                                    </ol>
-                                </div>
-
-                                <!-- Community Info -->
-                                <div class="mt-4 pt-4 border-t border-gray-100 text-sm">
-                                    <div class="flex items-center space-x-2 text-gray-500">
+                                <!-- Created Info -->
+                                <div class="mt-4 space-y-2">
+                                    <div class="flex items-center gap-2 text-sm text-gray-500">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <span>Created {{ subfapp.created_at }}</span>
+                                        <span>Created {{ new Date(subfapp.created_at).toLocaleDateString() }}</span>
                                     </div>
-                                    <div class="flex items-center space-x-2 text-gray-500 mt-2">
+                                    <div class="flex items-center gap-2 text-sm text-gray-500">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
-                                        <span>Created by u/{{ subfapp.creator.name }}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Community Rules -->
-                                <div class="mt-4 pt-4 border-t border-gray-100">
-                                    <h3 class="font-medium text-gray-900 mb-2">Community Rules</h3>
-                                    <ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">
-                                        <li>Be respectful to others</li>
-                                        <li>No spam or self-promotion</li>
-                                        <li>Post relevant content only</li>
-                                    </ol>
-                                </div>
-
-                                <!-- Community Info -->
-                                <div class="mt-4 pt-4 border-t border-gray-100 text-sm">
-                                    <div class="flex items-center space-x-2 text-gray-500">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <span>Created {{ subfapp.created_at }}</span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 text-gray-500 mt-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        <span>Created by u/{{ subfapp.creator.name }}</span>
+                                        <span>Created by u/{{ subfapp.creator?.name }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <!-- Full Screen Modal -->
+                <div
+                    v-if="selectedImage"
+                    class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+                    @click="closeImage"
+                >
+                    <img :src="selectedImage" alt="Full size image" class="max-w-full max-h-full object-contain">
+                </div>
             </div>
-        </div>
-        <!-- Full Screen Modal -->
-        <div
-            v-if="selectedImage"
-            class="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            @click="closeImage"
-        >
-            <button
-                class="absolute top-4 right-4 text-white hover:text-gray-300 focus:outline-none"
-                @click="closeImage"
-            >
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-            <img
-                :src="`/storage/${selectedImage.image_path}`"
-                :alt="`Post image ${selectedImage.id}`"
-                class="max-h-[90vh] max-w-[90vw] object-contain"
-                @click.stop
-            />
         </div>
     </MainLayout>
 </template>

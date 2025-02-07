@@ -64,4 +64,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(PostVote::class);
     }
+
+    public function subfapps()
+    {
+        return $this->belongsToMany(Subfapp::class, 'user_subfapp');
+    }
 }

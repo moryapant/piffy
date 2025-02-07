@@ -60,8 +60,8 @@ defineProps({
                         <!-- Header with Icon -->
                         <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
                             <div class="flex items-center space-x-3">
-                                <div v-if="subfapp.icon" class="flex-shrink-0 h-12 w-12">
-                                    <img :src="subfapp.icon" class="h-12 w-12 rounded-full object-cover" :alt="subfapp.display_name">
+                                <div v-if="subfapp.avtaar" class="flex-shrink-0 h-12 w-12">
+                                    <img :src="`/storage/${subfapp.avtaar}`" class="h-12 w-12 rounded-full object-cover" :alt="subfapp.display_name">
                                 </div>
                                 <div v-else class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                                     <span class="text-white font-bold text-xl">{{ subfapp.display_name.charAt(0).toUpperCase() }}</span>
