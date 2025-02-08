@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
 Route::resource('posts', PostController::class);
 Route::post('/posts/{post}/vote', [PostVoteController::class, 'vote'])->name('posts.vote');
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('posts.comments.store');
+Route::post('/posts/{post}/comments/reply', [CommentController::class, 'reply'])->name('posts.comments.reply');
 Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
 // Temporary test route

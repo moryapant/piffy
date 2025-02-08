@@ -5,6 +5,7 @@ import PostVoteButtons from "@/Components/PostVoteButtons.vue";
 import UserAvatar from "@/Components/UserAvatar.vue";
 import { timeAgo } from "@/utils/dateUtils";
 import ImageGallery from "@/Components/ImageGallery.vue";
+import Comments from "@/Components/Comments.vue";
 
 const props = defineProps({
   post: {
@@ -17,10 +18,6 @@ const voteForm = useForm({
   vote_type: null,
 });
 
-const commentForm = useForm({
-  content: "",
-});
-
 const vote = (postId, voteType) => {
   voteForm.vote_type = voteType;
   voteForm.post(route("posts.vote", postId), {
@@ -29,24 +26,6 @@ const vote = (postId, voteType) => {
       window.dispatchEvent(new Event("post-voted"));
     },
   });
-};
-
-const submitComment = () => {
-  commentForm.post(route("posts.comments.store", props.post.id), {
-    preserveScroll: true,
-    onSuccess: () => {
-      commentForm.reset();
-      window.dispatchEvent(new Event("comment-added"));
-    },
-  });
-};
-
-const deleteComment = (commentId) => {
-  if (confirm("Are you sure you want to delete this comment?")) {
-    useForm().delete(route("comments.destroy", commentId), {
-      preserveScroll: true,
-    });
-  }
 };
 </script>
 
@@ -184,152 +163,11 @@ const deleteComment = (commentId) => {
       </div>
 
       <!-- Comments Section -->
-      <div
-        class="overflow-hidden bg-white sm:rounded-xl border-y sm:border border-gray-100 shadow-sm transition-all duration-200 hover:border-blue-200"
-      >
-        <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
-          <!-- Comment Form or Login Prompt -->
-          <div>
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Comments</h2>
-              <span class="text-sm text-gray-500">{{ post.comments_count || 0 }} {{ post.comments_count === 1 ? 'comment' : 'comments' }}</span>
-            </div>
-
-            <!-- Show comment form for authenticated users -->
-            <template v-if="$page.props.auth.user">
-              <div class="flex items-start space-x-4">
-                <!-- User Avatar -->
-                <UserAvatar
-                  :username="$page.props.auth.user.name"
-                  size="sm"
-                  bgColor="blue"
-                />
-                <!-- Comment Input -->
-                <div class="flex-grow">
-                  <div class="relative group">
-                    <textarea
-                      v-model="commentForm.content"
-                      rows="3"
-                      placeholder="What are your thoughts?"
-                      class="px-4 py-3 w-full text-sm text-gray-700 rounded-xl border border-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 transition-all duration-200 group-hover:border-blue-200"
-                    ></textarea>
-                    <div class="absolute inset-0 rounded-xl pointer-events-none transition-opacity duration-200 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-blue-50/20 to-transparent"></div>
-                  </div>
-                  <div class="flex justify-end mt-3">
-                    <button
-                      @click="submitComment"
-                      :disabled="commentForm.processing || !commentForm.content.trim()"
-                      class="flex items-center px-6 py-2.5 space-x-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl transition-all duration-200 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-md"
-                    >
-                      <svg v-if="commentForm.processing" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>{{ commentForm.processing ? "Posting..." : "Post Comment" }}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <!-- Show login prompt for non-authenticated users -->
-            <template v-else>
-              <div class="p-4 sm:p-6 text-center bg-gradient-to-b from-gray-50 to-white sm:rounded-xl border-y sm:border border-gray-100 shadow-sm">
-                <div class="mb-4">
-                  <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <h3 class="mb-2 text-lg font-semibold text-gray-900">Join the Discussion</h3>
-                <p class="mb-6 text-gray-600">Sign in to share your thoughts and engage with the community</p>
-                <div class="flex justify-center gap-3 sm:gap-4">
-                  <Link
-                    :href="route('login')"
-                    class="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl transition-all duration-200 hover:from-blue-700 hover:to-blue-600 hover:shadow-md hover:scale-105"
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    :href="route('register')"
-                    class="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-xl border border-gray-200 transition-all duration-200 hover:border-blue-200 hover:text-blue-600 hover:shadow-md hover:scale-105"
-                  >
-                    Sign up
-                  </Link>
-                </div>
-              </div>
-            </template>
-          </div>
-
-          <!-- Comments List -->
-          <div
-            v-if="post.comments && post.comments.length > 0"
-            class="space-y-4"
-          >
-            <div
-              v-for="comment in post.comments"
-              :key="comment.id"
-              class="group p-4 sm:p-6 rounded-xl border border-gray-100 transition-all duration-200 hover:border-blue-200 hover:shadow-sm bg-gradient-to-r hover:from-blue-50/30 hover:to-transparent"
-            >
-              <div class="flex items-start space-x-4">
-                <UserAvatar
-                  :username="comment.user.name"
-                  size="sm"
-                  bgColor="blue"
-                />
-                <div class="flex-grow min-w-0">
-                  <div class="flex flex-wrap items-center gap-x-2 mb-1.5">
-                    <span
-                      class="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 truncate max-w-[200px]"
-                      >{{ comment.user.name }}</span
-                    >
-                    <span class="text-sm text-gray-500">·</span>
-                    <span class="text-sm text-gray-500">{{ timeAgo(comment.created_at) }}</span>
-                  </div>
-                  <div class="prose prose-sm max-w-none text-gray-600">
-                    {{ comment.content }}
-                  </div>
-                  <!-- Comment Actions -->
-                  <div class="flex items-center mt-3 space-x-4">
-                    <button
-                      v-if="$page.props.auth.user && $page.props.auth.user.id === comment.user_id"
-                      @click="deleteComment(comment.id)"
-                      class="inline-flex items-center space-x-1.5 text-xs font-medium text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-red-600"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- No Comments State -->
-          <div v-else class="py-12 text-center">
-            <div class="p-8 mx-auto max-w-md bg-gray-50 rounded-xl">
-              <svg
-                class="mx-auto mb-4 w-12 h-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              <h3 class="mb-1 font-medium text-gray-900">No comments yet</h3>
-              <p class="text-sm text-gray-500">
-                Be the first to share what you think!
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Comments
+        :post-id="post.id"
+        :comments="post.comments"
+        :comments-count="post.comments_count"
+      />
     </div>
 
   </MainLayout>

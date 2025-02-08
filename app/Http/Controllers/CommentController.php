@@ -37,4 +37,23 @@ class CommentController extends Controller
         $comment->delete();
         return back()->with('success', 'Comment deleted successfully!');
     }
+
+    public function reply(Request $request, Post $post)
+    {
+        $validated = $request->validate([
+            'content' => 'required|string|max:1000',
+            'parent_id' => 'required|exists:comments,id'
+        ]);
+
+        $comment = new Comment([
+            'content' => $validated['content'],
+            'user_id' => auth()->id(),
+            'post_id' => $post->id,
+            'parent_id' => $validated['parent_id']
+        ]);
+
+        $comment->save();
+
+        return back()->with('success', 'Reply added successfully!');
+    }
 }
