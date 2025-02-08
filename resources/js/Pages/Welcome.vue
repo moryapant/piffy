@@ -4,12 +4,13 @@ import MainLayout from '@/Layouts/MainLayout.vue';
 import UserAvatar from '@/Components/UserAvatar.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import CommunitiesSidebar from '@/Components/CommunitiesSidebar.vue';
+import PostSortTabs from '@/Components/PostSortTabs.vue';
 import { ref } from 'vue';
 import ImageGallery from '@/Components/ImageGallery.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { timeAgo } from '@/utils/dateUtils';
 
-defineProps({
+const props = defineProps({
     posts: {
         type: Object,
         required: true
@@ -19,6 +20,7 @@ defineProps({
         required: true
     },
     canLogin: Boolean,
+    currentSort: String,
     canRegister: Boolean
 });
 
@@ -53,54 +55,15 @@ const vote = (postId, voteType) => {
             <div class="lg:flex lg:gap-8">
                 <!-- Main Content -->
                 <div class="w-full lg:flex-1">
+                    <!-- Sort Tabs -->
+                    <div class="mb-4">
+                        <PostSortTabs
+                            :current-sort="currentSort"
+                        />
+                    </div>
             <!-- Header Section -->
-            <div class="relative overflow-hidden p-8 mb-8 bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-2xl shadow-sm border border-blue-100/50">
-                <div class="relative z-10">
-                    <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Latest Posts</h1>
-                    <p class="mt-3 text-lg text-gray-600 max-w-2xl">Stay updated with the latest discussions across all communities</p>
-                </div>
-                <!-- Decorative Elements -->
-                <div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-72 h-72 bg-blue-100/20 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-72 h-72 bg-indigo-100/20 rounded-full blur-3xl"></div>
-            </div>
+         
 
-            <!-- Sort Options -->
-            <div class="relative mb-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto scrollbar-hide">
-                <div class="flex items-center gap-2 p-3 min-w-full lg:min-w-0">
-                    <button
-                        v-for="sort in ['Hot', 'New', 'Top', 'Rising']"
-                        :key="sort"
-                        class="flex items-center px-3 sm:px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-gray-50 group whitespace-nowrap flex-1 justify-center min-w-[100px] sm:min-w-0"
-                        :class="{
-                            'bg-blue-50/80 text-blue-600 hover:bg-blue-50 ring-1 ring-blue-100 shadow-sm': sort === 'Hot',
-                            'text-gray-600 hover:text-gray-900': sort !== 'Hot'
-                        }"
-                    >
-                        <!-- Icons for each sort option -->
-                        <template v-if="sort === 'Hot'">
-                            <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                            </svg>
-                        </template>
-                        <template v-else-if="sort === 'New'">
-                            <svg class="w-4 h-4 mr-1.5 text-gray-400 group-hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                        </template>
-                        <template v-else-if="sort === 'Top'">
-                            <svg class="w-4 h-4 mr-1.5 text-gray-400 group-hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7" />
-                            </svg>
-                        </template>
-                        <template v-else-if="sort === 'Rising'">
-                            <svg class="w-4 h-4 mr-1.5 text-gray-400 group-hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                        </template>
-                        {{ sort }}
-                    </button>
-                </div>
-            </div>
 
             <!-- Posts List -->
             <div class="space-y-4 sm:space-y-6 -mx-2 sm:mx-0">

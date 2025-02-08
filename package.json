@@ -28,8 +28,6 @@
         "@tiptap/pm": "^2.11.5",
         "@tiptap/starter-kit": "^2.11.5",
         "@tiptap/vue-3": "^2.11.5",
-        "firebase": "^11.2.0",
-        "laravel-echo": "^1.19.0",
-        "pusher-js": "^8.4.0"
+        "firebase": "^11.2.0"
     }
 }

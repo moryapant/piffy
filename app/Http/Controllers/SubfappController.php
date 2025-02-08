@@ -121,30 +121,55 @@ class SubfappController extends Controller
             ->with('success', 'Subfapp created successfully!');
     }
 
-    public function show(Subfapp $subfapp)
+    public function show(Request $request, Subfapp $subfapp)
     {
         if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'You must log in to view subfapp posts.');
         }
 
+        $sort = $request->input('sort', 'hot');
         $hasJoined = auth()->user()->subfapps->contains($subfapp->id);
-        $query = $hasJoined ? $subfapp->posts() : $subfapp->posts()->whereRaw('1 = 0');
         
-        $posts = $query->with(['user', 'subfapp', 'images'])
+        // Only show posts from this subfapp
+        $query = $subfapp->posts();
+        
+        // If user hasn't joined, don't show any posts
+        if (!$hasJoined) {
+            $query->whereRaw('1 = 0');
+        }
+        
+        $query = $query->with(['user', 'subfapp', 'images'])
             ->withCount('comments')
             ->with(['userVote' => function($query) {
                 $query->where('user_id', auth()->id());
-            }])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            }]);
 
+        // Apply sorting only to posts from this subfapp
+        switch ($sort) {
+            case 'new':
+                $query->latest();
+                break;
+            case 'top':
+                $query->orderBy('score', 'desc');
+                break;
+            case 'rising':
+                $query->where('created_at', '>=', now()->subHours(24))
+                      ->orderBy('score', 'desc');
+                break;
+            default: // 'hot'
+                $query->orderBy('hot_score', 'desc');
+                break;
+        }
+
+        $posts = $query->paginate(20);
         $membersCount = $subfapp->users()->count();
 
         return Inertia::render('Subfapps/Show', [
             'subfapp' => $subfapp->load('creator'),
             'posts' => $posts,
             'hasJoined' => $hasJoined,
-            'membersCount' => $membersCount
+            'membersCount' => $membersCount,
+            'currentSort' => $sort
         ]);
     }
 

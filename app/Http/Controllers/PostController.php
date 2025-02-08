@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use App\Models\Subfapp;
 use App\Models\Tag;
+use App\Services\PostSorting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Routing\Controller;
@@ -15,20 +16,35 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
 class PostController extends Controller
 {
     use AuthorizesRequests, ValidatesRequests;
-    public function __construct()
+
+    protected $postSorting;
+
+    public function __construct(PostSorting $postSorting)
     {
+        $this->postSorting = $postSorting;
         $this->middleware('auth')->except(['index', 'show']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $posts = Post::with(['user', 'subfapp', 'images', 'tags'])
+        $query = Post::with(['user', 'subfapp', 'images', 'tags'])
             ->withCount('comments')
-            ->with(['userVote' => function($query) {
-                $query->where('user_id', auth()->id());
-            }])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->when(auth()->check(), function($query) {
+                $query->with(['userVote' => function($query) {
+                    $query->where('user_id', auth()->id());
+                }]);
+            });
+
+        // Apply sorting based on last 6 hours of activity
+        $sort = $request->get('sort', 'hot');
+        $query = match ($sort) {
+            'new' => $this->postSorting->new($query),
+            'top' => $this->postSorting->top($query),  // Now uses 6h window
+            'rising' => $this->postSorting->rising($query),
+            default => $this->postSorting->hot($query),
+        };
+
+        $posts = $query->paginate(20);
 
         // Get popular communities
         $communities = Subfapp::withCount(['posts', 'users'])
@@ -52,6 +68,7 @@ class PostController extends Controller
             'communities' => $communities,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
+            'currentSort' => $sort,
         ]);
     }
 
@@ -118,7 +135,7 @@ class PostController extends Controller
             ->with('success', 'Post created successfully!');
     }
 
-    public function show(Post $post)
+    public function show(Post $post, Request $request)
     {
         $post->load(['user', 'subfapp', 'images', 'tags'])
             ->loadCount('comments')
@@ -132,6 +149,9 @@ class PostController extends Controller
                 $query->where('user_id', auth()->id());
             }]);
         }
+
+        // Track post view
+        $this->trackPostView($post, $request);
 
         return Inertia::render('Post/Show', [
             'post' => $post
@@ -176,5 +196,32 @@ class PostController extends Controller
 
         return redirect()->route('posts.index')
             ->with('success', 'Post deleted successfully!');
+    }
+
+    /**
+     * Track post view and update metrics
+     */
+    protected function trackPostView(Post $post, Request $request): void
+    {
+        // Check if this IP has viewed the post in the last 6 hours
+        $recentView = $post->views()
+            ->where('ip_address', $request->ip())
+            ->where('created_at', '>=', now()->subHours(6))
+            ->exists();
+
+        if (!$recentView) {
+            // Create new view record
+            $post->views()->create([
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'user_id' => auth()->id(),
+            ]);
+
+            // Increment views count
+            $post->increment('views_count');
+
+            // Update trending status
+            app(PostSorting::class)->updateTrendingStatus($post);
+        }
     }
 }

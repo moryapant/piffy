@@ -18,9 +18,23 @@ class Post extends Model
         'upvotes',
         'downvotes',
         'comment_count',
+        'score',
+        'hot_score',
+        'views_count',
+        'trending_start',
     ];
 
     protected $with = ['tags'];
+
+    protected $casts = [
+        'hot_score' => 'float',
+        'trending_start' => 'datetime',
+        'score' => 'integer',
+        'views_count' => 'integer',
+        'upvotes' => 'integer',
+        'downvotes' => 'integer',
+        'comment_count' => 'integer',
+    ];
 
     public function subfapp()
     {
@@ -45,6 +59,11 @@ class Post extends Model
     public function images()
     {
         return $this->hasMany(PostImage::class)->orderBy('order');
+    }
+
+    public function views()
+    {
+        return $this->hasMany(PostView::class);
     }
 
     public function tags()

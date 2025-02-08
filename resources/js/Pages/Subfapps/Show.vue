@@ -4,6 +4,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import Pagination from '@/Components/Pagination.vue';
 import PostVoteButtons from '@/Components/PostVoteButtons.vue';
+import PostSortTabs from '@/Components/PostSortTabs.vue';
 import { timeAgo } from '@/utils/dateUtils';
 
 const coverImageInput = ref(null);
@@ -49,6 +50,10 @@ const props = defineProps({
     posts: {
         type: Object,
         required: true
+    },
+    currentSort: {
+        type: String,
+        default: 'hot'
     },
     hasJoined: {
         type: Boolean,
@@ -201,36 +206,7 @@ const props = defineProps({
                 <div class="flex-1 space-y-4 order-2 lg:order-1">
                     <!-- Posts List -->
                     <!-- Sort Options -->
-                    <div class="flex items-center gap-4 -mb-2">
-                        <button
-                            v-for="(sort, index) in ['Hot', 'New', 'Top', 'Rising']"
-                            :key="sort"
-                            class="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200"
-                            :class="index === 0 ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-gray-600 hover:bg-gray-50'"
-                        >
-                            <span v-if="sort === 'Hot'" class="text-blue-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                                </svg>
-                            </span>
-                            <span v-if="sort === 'New'" class="text-gray-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                            </span>
-                            <span v-if="sort === 'Top'" class="text-gray-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                                </svg>
-                            </span>
-                            <span v-if="sort === 'Rising'" class="text-gray-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                </svg>
-                            </span>
-                            {{ sort }}
-                        </button>
-                    </div>
+                    <PostSortTabs :current-sort="currentSort" :subfapp-id="subfapp.id" />
                     <div v-if="!hasJoined" class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
                         <p class="text-gray-600">Join this community to see its posts</p>
                     </div>
