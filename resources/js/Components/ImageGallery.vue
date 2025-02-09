@@ -1,3 +1,76 @@
+<script setup>
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
+
+const props = defineProps({
+    images: {
+        type: Array,
+        required: true
+    }
+});
+
+const selectedImage = ref(null);
+const modalRef = ref(null);
+
+const getImageUrl = (image) => {
+    return `/storage/${image.image_path}`;
+};
+
+const currentImageIndex = computed(() => {
+    if (!selectedImage.value) return -1;
+    return props.images.findIndex(img => img.id === selectedImage.value.id);
+});
+
+const openImage = (image) => {
+    selectedImage.value = image;
+    nextTick(() => {
+        if (modalRef.value) {
+            modalRef.value.focus();
+        }
+    });
+};
+
+const closeImage = () => {
+    selectedImage.value = null;
+};
+
+const previousImage = () => {
+    if (currentImageIndex.value > 0) {
+        selectedImage.value = props.images[currentImageIndex.value - 1];
+    }
+};
+
+const nextImage = () => {
+    if (currentImageIndex.value < props.images.length - 1) {
+        selectedImage.value = props.images[currentImageIndex.value + 1];
+    }
+};
+
+// Handle keyboard events
+const handleKeydown = (e) => {
+    if (!selectedImage.value) return;
+    
+    switch (e.key) {
+        case 'ArrowLeft':
+            previousImage();
+            break;
+        case 'ArrowRight':
+            nextImage();
+            break;
+        case 'Escape':
+            closeImage();
+            break;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('keydown', handleKeydown);
+});
+</script>
+
 <template>
     <div>
         <!-- Image Gallery Grid -->
@@ -14,10 +87,12 @@
                 @click="openImage(image)"
             >
                 <img 
-                    :src="`/storage/${image.image_path}`" 
+                    :src="getImageUrl(image)" 
                     :alt="`Post image ${image.id}`"
                     class="w-full h-full object-cover"
                     loading="lazy"
+                    @error="e => console.error('Image load error:', getImageUrl(image), e)"
+                    @load="() => console.log('Image loaded:', getImageUrl(image))"
                 />
                 <!-- More Images Indicator -->
                 <div
@@ -90,71 +165,4 @@
     </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
 
-const props = defineProps({
-    images: {
-        type: Array,
-        required: true
-    }
-});
-
-const selectedImage = ref(null);
-const modalRef = ref(null);
-
-const currentImageIndex = computed(() => {
-    if (!selectedImage.value) return -1;
-    return props.images.findIndex(img => img.id === selectedImage.value.id);
-});
-
-const openImage = (image) => {
-    selectedImage.value = image;
-    nextTick(() => {
-        if (modalRef.value) {
-            modalRef.value.focus();
-        }
-    });
-};
-
-const closeImage = () => {
-    selectedImage.value = null;
-};
-
-const previousImage = () => {
-    if (currentImageIndex.value > 0) {
-        selectedImage.value = props.images[currentImageIndex.value - 1];
-    }
-};
-
-const nextImage = () => {
-    if (currentImageIndex.value < props.images.length - 1) {
-        selectedImage.value = props.images[currentImageIndex.value + 1];
-    }
-};
-
-// Handle keyboard events
-const handleKeydown = (e) => {
-    if (!selectedImage.value) return;
-    
-    switch (e.key) {
-        case 'ArrowLeft':
-            previousImage();
-            break;
-        case 'ArrowRight':
-            nextImage();
-            break;
-        case 'Escape':
-            closeImage();
-            break;
-    }
-};
-
-onMounted(() => {
-    document.addEventListener('keydown', handleKeydown);
-});
-
-onUnmounted(() => {
-    document.removeEventListener('keydown', handleKeydown);
-});
-</script>

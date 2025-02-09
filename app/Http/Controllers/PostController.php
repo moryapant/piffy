@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 
@@ -24,6 +25,8 @@ class PostController extends Controller
         $this->postSorting = $postSorting;
         $this->middleware('auth')->except(['index', 'show']);
     }
+
+
 
     public function index(Request $request)
     {
@@ -153,8 +156,20 @@ class PostController extends Controller
         // Track post view
         $this->trackPostView($post, $request);
 
+        // Process post data with image URLs
+        $postData = $post->toArray();
+        $postData['images'] = collect($post->images)->map(function($image) {
+            return [
+                'id' => $image->id,
+                'image_path' => $image->image_path,
+                'order' => $image->order,
+                'url' => Storage::url($image->image_path)
+            ];
+        })->values()->all();
+
+
         return Inertia::render('Post/Show', [
-            'post' => $post
+            'post' => $postData
         ]);
     }
 
@@ -166,8 +181,25 @@ class PostController extends Controller
             ->orderBy('display_name')
             ->get();
 
-        return Inertia::render('Posts/Edit', [
-            'post' => $post,
+        // Load the post with its relationships
+        $post->load(['images', 'subfapp', 'user', 'tags']);
+
+
+
+        // Keep the original post data but ensure images are properly formatted
+        $postData = $post->toArray();
+        $postData['images'] = $post->images->map(function($image) {
+            return [
+                'id' => $image->id,
+                'image_path' => $image->image_path,
+                'url' => Storage::url($image->image_path)
+            ];
+        })->values()->all();
+
+
+
+        return Inertia::render('Post/Edit', [
+            'post' => $postData,
             'subfapps' => $subfapps
         ]);
     }
@@ -176,13 +208,91 @@ class PostController extends Controller
     {
         $this->authorize('update', $post);
 
+
+
+        // If no content is provided, keep the existing content
+        $content = $request->input('content') ?: $post->content;
+        $title = $request->input('title') ?: $post->title;
+        $subfappId = $request->input('subfapp_id') ?: $post->subfapp_id;
+
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'subfapp_id' => 'required|exists:subfapps,id',
+            'title' => 'nullable|string|max:255',
+            'content' => 'nullable|string',
+            'subfapp_id' => 'nullable|exists:subfapps,id',
+            'removedImages' => 'nullable|array',
+            'removedImages.*' => 'integer|exists:post_images,id',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
         ]);
 
-        $post->update($validated);
+        // Update basic post information
+        $post->update([
+            'title' => $title,
+            'content' => $content,
+            'subfapp_id' => $subfappId,
+        ]);
+
+        // Remove selected images
+        if ($request->removedImages) {
+
+            foreach ($request->removedImages as $imageId) {
+                $image = $post->images()->find($imageId);
+                if ($image) {
+                    Storage::disk('public')->delete($image->image_path);
+                    $image->delete();
+                }
+            }
+        }
+
+        // Handle new images
+        if ($request->has('images')) {
+            $images = $request->file('images');
+
+            foreach ($images as $image) {
+                try {
+                    if ($image && $image->isValid()) {
+                        $path = $image->store('posts/images', 'public');
+
+                        // Create database record
+                        $imageModel = $post->images()->create([
+                            'image_path' => $path,
+                            'order' => $post->images()->count()
+                        ]);
+
+                    } else {
+                    }
+                } catch (\Exception $e) {
+                    throw $e;
+                }
+            }
+        } else {
+        }
+
+        // Reload post with all relationships
+        $post->load(['user', 'subfapp', 'images' => function($query) {
+            $query->orderBy('order');
+        }, 'tags'])
+            ->loadCount('comments')
+            ->load(['comments' => function($query) {
+                $query->with('user')->latest();
+            }]);
+
+        if (auth()->check()) {
+            $post->load(['userVote' => function($query) {
+                $query->where('user_id', auth()->id());
+            }]);
+        }
+
+        // Process post data with image URLs
+        $postData = $post->toArray();
+        $postData['images'] = collect($post->images)->map(function($image) {
+            return [
+                'id' => $image->id,
+                'image_path' => $image->image_path,
+                'order' => $image->order,
+                'url' => Storage::url($image->image_path)
+            ];
+        })->values()->all();
 
         return redirect()->route('posts.show', $post)
             ->with('success', 'Post updated successfully!');

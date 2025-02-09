@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import { useForm } from "@inertiajs/vue3";
+import { useForm, Link } from "@inertiajs/vue3";
 import UserAvatar from "@/Components/UserAvatar.vue";
 import { timeAgo } from "@/utils/dateUtils";
 

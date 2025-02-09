@@ -51,14 +51,14 @@ class Post extends Model
         return $this->hasMany(Comment::class);
     }
 
-    public function votes()
-    {
-        return $this->hasMany(PostVote::class);
-    }
-
     public function images()
     {
         return $this->hasMany(PostImage::class)->orderBy('order');
+    }
+
+    public function votes()
+    {
+        return $this->hasMany(PostVote::class);
     }
 
     public function views()

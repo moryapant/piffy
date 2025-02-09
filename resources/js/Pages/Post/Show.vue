@@ -99,6 +99,18 @@ const vote = (postId, voteType) => {
               <PostVoteButtons :post="post" @vote="vote" />
             </div>
 
+            <!-- Edit Button (Only visible to post owner) -->
+            <Link
+              v-if="$page.props.auth.user?.id === post.user.id"
+              :href="route('posts.edit', post.id)"
+              class="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+              </svg>
+              <span>Edit</span>
+            </Link>
+
             <!-- Comments -->
             <button
               class="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors duration-200"
