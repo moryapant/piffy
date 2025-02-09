@@ -1,9 +1,26 @@
 <script setup>
 import MainLayout from "@/Layouts/MainLayout.vue";
-import { Head, useForm } from "@inertiajs/vue3";
+import { Head, useForm, router } from "@inertiajs/vue3";
 import RichTextEditor from "@/Components/RichTextEditor.vue";
 import ImageGallery from "@/Components/ImageGallery.vue";
 import { ref, computed, onBeforeUnmount, onMounted } from 'vue';
+import {
+    TransitionRoot,
+    TransitionChild,
+    Dialog,
+    DialogPanel,
+    DialogTitle,
+} from '@headlessui/vue';
+
+const showDeleteConfirm = ref(false);
+
+const deletePost = () => {
+    router.delete(route('posts.destroy', props.post.id), {
+        onSuccess: () => {
+            showDeleteConfirm.value = false;
+        },
+    });
+};
 
 const props = defineProps({
     post: {
@@ -174,9 +191,9 @@ const submit = () => {
                         <pre v-if="props.post" class="hidden">{{ props.post }}</pre>
                         
                         <!-- Image Upload -->
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <label class="text-lg font-semibold text-gray-800">Images</label>
+                        <div class="space-y-2">
+                            <div class="flex flex-col space-y-1">
+                                <h2 class="text-xl font-semibold text-gray-900">Upload Images</h2>
                                 <span class="text-sm text-gray-500">Supported formats: JPEG, PNG, GIF, WEBP</span>
                             </div>
                             
@@ -191,14 +208,14 @@ const submit = () => {
                                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     :disabled="form.processing"
                                 />
-                                <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-500 transition-colors duration-200">
-                                    <div class="space-y-2">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <div class="border border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors duration-200">
+                                    <div class="space-y-3">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <div class="text-sm text-gray-600">
-                                            <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span>
-                                            <span> or drag and drop</span>
+                                        <div class="text-sm">
+                                            <span class="text-blue-500 hover:text-blue-600 font-medium">Click to upload</span>
+                                            <span class="text-gray-600"> or drag and drop</span>
                                         </div>
                                     </div>
                                 </div>
@@ -206,9 +223,9 @@ const submit = () => {
 
                             <!-- Error Messages -->
                             <div v-if="form.errors.images || Object.keys(form.errors).some(key => key.startsWith('images.'))" 
-                                class="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-                                <div class="flex">
-                                    <div class="flex-shrink-0">
+                                class="bg-red-50 border-l-4 border-red-400 p-3 sm:p-4 rounded-md">
+                                <div class="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                                    <div class="flex-shrink-0 hidden sm:block">
                                         <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                                         </svg>
@@ -227,11 +244,11 @@ const submit = () => {
 
                         <!-- Current Images -->
                         <div v-if="currentImages.length > 0" class="space-y-4 mt-8">
-                            <div class="flex items-center justify-between">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <h3 class="text-lg font-semibold text-gray-800">Current Images</h3>
-                                <span class="px-2.5 py-0.5 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">{{ currentImages.length }}</span>
+                                <span class="px-2.5 py-0.5 text-sm font-medium bg-blue-100 text-blue-800 rounded-full self-start sm:self-auto">{{ currentImages.length }}</span>
                             </div>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                                 <div v-for="image in currentImages" :key="image.id" 
                                      class="relative group aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
                                     <img 
@@ -247,7 +264,7 @@ const submit = () => {
                                         <button 
                                             type="button"
                                             @click="removeImage(image.id)"
-                                            class="px-4 py-2 text-sm font-medium rounded-lg shadow-sm transition-all duration-200 transform hover:scale-105"
+                                            class="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium rounded-lg shadow-sm transition-all duration-200 transform hover:scale-105"
                                             :class="isImageMarkedForRemoval(image.id) ? 
                                                 'bg-green-500 hover:bg-green-600 text-white' : 
                                                 'bg-red-500 hover:bg-red-600 text-white'"
@@ -263,11 +280,11 @@ const submit = () => {
 
                         <!-- Preview New Images -->
                         <div v-if="imageUrls.length" class="space-y-4 mt-8">
-                            <div class="flex items-center justify-between">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <h3 class="text-lg font-semibold text-gray-800">New Images</h3>
-                                <span class="px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 rounded-full">{{ imageUrls.length }}</span>
+                                <span class="px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 rounded-full self-start sm:self-auto">{{ imageUrls.length }}</span>
                             </div>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                                 <div v-for="(url, index) in imageUrls" :key="index" 
                                      class="relative group aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
                                     <img 
@@ -297,8 +314,18 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Submit Button -->
-                        <div class="flex justify-end">
+                        <!-- Action Buttons -->
+                        <div class="flex justify-between items-center">
+                            <button 
+                                type="button" 
+                                @click="showDeleteConfirm = true"
+                                class="group inline-flex items-center px-4 py-2 text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 hover:border-red-300 shadow-sm hover:shadow"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-red-500 group-hover:text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Delete Post
+                            </button>
                             <button
                                 type="submit"
                                 class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
@@ -307,6 +334,68 @@ const submit = () => {
                                 Update Post
                             </button>
                         </div>
+
+                        <!-- Delete Confirmation Modal -->
+                        <TransitionRoot appear :show="showDeleteConfirm" as="template">
+                            <Dialog as="div" @close="showDeleteConfirm = false" class="relative z-50">
+                                <TransitionChild
+                                    as="template"
+                                    enter="duration-300 ease-out"
+                                    enter-from="opacity-0"
+                                    enter-to="opacity-100"
+                                    leave="duration-200 ease-in"
+                                    leave-from="opacity-100"
+                                    leave-to="opacity-0"
+                                >
+                                    <div class="fixed inset-0 bg-black/25" />
+                                </TransitionChild>
+
+                                <div class="fixed inset-0 overflow-y-auto">
+                                    <div class="flex min-h-full items-center justify-center p-4 text-center">
+                                        <TransitionChild
+                                            as="template"
+                                            enter="duration-300 ease-out"
+                                            enter-from="opacity-0 scale-95"
+                                            enter-to="opacity-100 scale-100"
+                                            leave="duration-200 ease-in"
+                                            leave-from="opacity-100 scale-100"
+                                            leave-to="opacity-0 scale-95"
+                                        >
+                                            <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                                                <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">
+                                                    Delete Post
+                                                </DialogTitle>
+                                                <div class="mt-2">
+                                                    <p class="text-sm text-gray-500">
+                                                        Are you sure you want to delete this post? This action cannot be undone.
+                                                    </p>
+                                                </div>
+
+                                                <div class="mt-4 flex justify-end space-x-3">
+                                                    <button
+                                                        type="button"
+                                                        class="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
+                                                        @click="showDeleteConfirm = false"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 shadow-sm hover:shadow transition-all duration-200"
+                                                        @click="deletePost"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                        </svg>
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </DialogPanel>
+                                        </TransitionChild>
+                                    </div>
+                                </div>
+                            </Dialog>
+                        </TransitionRoot>
                     </form>
                 </div>
             </div>
