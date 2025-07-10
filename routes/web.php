@@ -15,6 +15,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 });
 
 // Subfapp routes
@@ -34,7 +35,7 @@ Route::post('/posts/{post}/comments/reply', [CommentController::class, 'reply'])
 Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
 // Temporary test route
-Route::get('/test-storage', function() {
+Route::get('/test-storage', function () {
     return response()->file(storage_path('app/public/subfapps/covers/UfN0YfPp2frwzZYZ8Zwrm3rDmnmW70Earz36oGSx.jpg'));
 });
 
