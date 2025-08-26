@@ -21,7 +21,7 @@ return new class extends Migration
             $table->morphs('subject'); // Polymorphic relationship to the subject (post, comment, etc.)
             $table->timestamp('performed_at');
             $table->timestamps();
-            
+
             // Index for faster querying
             $table->index(['activity_type', 'performed_at']);
             $table->index(['user_id', 'performed_at']);

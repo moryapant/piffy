@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subfapp;
-use Inertia\Inertia;
-use Illuminate\Http\Request;
-
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Storage;
+use App\Services\VisitService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class SubfappController extends Controller
 {
@@ -76,26 +76,59 @@ class SubfappController extends Controller
 
     public function index()
     {
-        $subfapps = Subfapp::withCount(['posts', 'users'])
-            ->with(['creator'])
-            ->orderBy('member_count', 'desc')
+        $user = auth()->user();
+
+        $query = Subfapp::withCount(['posts', 'users'])
+            ->with(['creator']);
+
+        // If user is authenticated, eager load their memberships to avoid N+1 queries
+        if ($user) {
+            $query->with(['users' => function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            }]);
+        }
+
+        // Filter out hidden communities unless user is member/creator/admin
+        if ($user) {
+            $query->where(function ($q) use ($user) {
+                $q->where('type', '!=', 'hidden')
+                    ->orWhere('created_by', $user->id)
+                    ->orWhereHas('users', function ($userQuery) use ($user) {
+                        $userQuery->where('users.id', $user->id);
+                    });
+
+                if ($user->is_admin) {
+                    $q->orWhere('type', 'hidden');
+                }
+            });
+        } else {
+            // Non-authenticated users can only see public and restricted communities
+            $query->whereIn('type', ['public', 'restricted']);
+        }
+
+        $subfapps = $query->orderBy('member_count', 'desc')
             ->paginate(20)
-            ->through(function ($subfapp) {
+            ->through(function ($subfapp) use ($user) {
                 return [
                     'id' => $subfapp->id,
                     'name' => $subfapp->name,
                     'display_name' => $subfapp->display_name,
                     'description' => $subfapp->description,
-                    'icon' => $subfapp->cover_image,
-                    'avtaar' => $subfapp->icon,
+                    'cover_image' => $subfapp->cover_image,
+                    'icon' => $subfapp->icon,
                     'posts_count' => $subfapp->posts_count,
                     'member_count' => $subfapp->users_count,
-                    'created_by' => $subfapp->created_by
+                    'created_by' => $subfapp->created_by,
+                    'type' => $subfapp->type,
+                    'nsfw' => $subfapp->nsfw,
+                    'color' => $subfapp->color,
+                    'has_joined' => $user ? $subfapp->users->isNotEmpty() : false,
+                    'created_at' => $subfapp->created_at,
                 ];
             });
 
         return Inertia::render('Subfapps/Index', [
-            'subfapps' => $subfapps
+            'subfapps' => $subfapps,
         ]);
     }
 
@@ -110,39 +143,83 @@ class SubfappController extends Controller
             'name' => 'required|string|max:255|unique:subfapps',
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'icon' => 'nullable|url',
+            'icon' => 'nullable|image|max:2048|mimes:jpeg,jpg,png,webp',
+            'type' => 'required|in:public,restricted,private,hidden',
+            'color' => 'required|string|max:7',
         ]);
+
+        // Set default value for nsfw since it's not in the form anymore
+        $validated['nsfw'] = false;
+
+        // Handle icon upload
+        if ($request->hasFile('icon')) {
+            $validated['icon'] = $request->file('icon')->store('subfapps/avatars', 'public');
+        } else {
+            unset($validated['icon']);
+        }
 
         $subfapp = new Subfapp($validated);
         $subfapp->created_by = auth()->id();
         $subfapp->save();
 
+        // Auto-join the creator to their own community
+        auth()->user()->subfapps()->attach($subfapp->id);
+
         return redirect()->route('subfapps.show', $subfapp)
-            ->with('success', 'Subfapp created successfully!');
+            ->with('success', 'Community created successfully!');
     }
 
     public function show(Request $request, Subfapp $subfapp)
     {
-        if (!auth()->check()) {
-            return redirect()->route('login')->with('error', 'You must log in to view subfapp posts.');
+        $user = auth()->user();
+
+        // Check if user can view this community
+        if (! $subfapp->canView($user)) {
+            if (! $user) {
+                return redirect()->route('login')->with('error', 'You must log in to view this community.');
+            }
+            abort(403, 'You do not have permission to view this community.');
         }
 
         $sort = $request->input('sort', 'hot');
-        $hasJoined = auth()->user()->subfapps->contains($subfapp->id);
-        
+        $hasJoined = $user ? $user->subfapps->contains($subfapp->id) : false;
+        $canPost = $subfapp->canPost($user);
+
+        // Record this visit in the visits table for activity tracking
+        if ($user) {
+            VisitService::recordActivity(
+                $request,
+                'page_view',
+                "Viewing Community: {$subfapp->display_name}",
+                $subfapp->id,
+                'Subfapp',
+                ['subfapp_id' => $subfapp->id, 'subfapp_name' => $subfapp->name]
+            );
+        }
+
+        // Increment views count on every visit
+        $subfapp->increment('views_count');
+
         // Only show posts from this subfapp
         $query = $subfapp->posts();
-        
-        // If user hasn't joined, don't show any posts
-        if (!$hasJoined) {
-            $query->whereRaw('1 = 0');
+
+        // For restricted/private communities, only show posts if user is member or creator/admin
+        if ($subfapp->isRestricted() || $subfapp->isPrivate()) {
+            if (! $hasJoined && $subfapp->created_by !== $user?->id && ! $user?->is_admin) {
+                $query->whereRaw('1 = 0'); // Show no posts
+            }
         }
-        
-        $query = $query->with(['user', 'subfapp', 'images'])
-            ->withCount('comments')
-            ->with(['userVote' => function($query) {
-                $query->where('user_id', auth()->id());
-            }]);
+
+        if ($user) {
+            $query = $query->with(['user', 'subfapp', 'images'])
+                ->withCount('comments')
+                ->with(['userVote' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                }]);
+        } else {
+            $query = $query->with(['user', 'subfapp', 'images'])
+                ->withCount('comments');
+        }
 
         // Apply sorting only to posts from this subfapp
         switch ($sort) {
@@ -154,7 +231,7 @@ class SubfappController extends Controller
                 break;
             case 'rising':
                 $query->where('created_at', '>=', now()->subHours(24))
-                      ->orderBy('score', 'desc');
+                    ->orderBy('score', 'desc');
                 break;
             default: // 'hot'
                 $query->orderBy('hot_score', 'desc');
@@ -168,8 +245,9 @@ class SubfappController extends Controller
             'subfapp' => $subfapp->load('creator'),
             'posts' => $posts,
             'hasJoined' => $hasJoined,
+            'canPost' => $canPost,
             'membersCount' => $membersCount,
-            'currentSort' => $sort
+            'currentSort' => $sort,
         ]);
     }
 
@@ -178,7 +256,7 @@ class SubfappController extends Controller
         $this->authorize('update', $subfapp);
 
         return Inertia::render('Subfapps/Edit', [
-            'subfapp' => $subfapp
+            'subfapp' => $subfapp,
         ]);
     }
 
@@ -186,11 +264,31 @@ class SubfappController extends Controller
     {
         $this->authorize('update', $subfapp);
 
+        // Debug the request
+        logger('Subfapp update request data:', [
+            'all' => $request->all(),
+            'has_display_name' => $request->has('display_name'),
+            'display_name_value' => $request->get('display_name'),
+            'files' => $request->allFiles(),
+            'content_type' => $request->header('Content-Type'),
+        ]);
+
         $validated = $request->validate([
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'icon' => 'nullable|url',
+            'icon' => 'nullable|image|max:2048|mimes:jpeg,jpg,png,webp',
         ]);
+
+        // Handle icon upload
+        if ($request->hasFile('icon')) {
+            // Delete old icon if exists
+            if ($subfapp->icon) {
+                Storage::disk('public')->delete($subfapp->icon);
+            }
+            $validated['icon'] = $request->file('icon')->store('subfapps/avatars', 'public');
+        } else {
+            unset($validated['icon']);
+        }
 
         $subfapp->update($validated);
 
@@ -202,6 +300,14 @@ class SubfappController extends Controller
     {
         $this->authorize('delete', $subfapp);
 
+        // Delete associated files
+        if ($subfapp->icon) {
+            Storage::disk('public')->delete($subfapp->icon);
+        }
+        if ($subfapp->cover_image) {
+            Storage::disk('public')->delete($subfapp->cover_image);
+        }
+
         $subfapp->delete();
 
         return redirect()->route('subfapps.index')
@@ -210,19 +316,38 @@ class SubfappController extends Controller
 
     public function join(Subfapp $subfapp)
     {
-        if (!auth()->check()) {
-            return redirect()->route('login')->with('error', 'You must log in to join a subfapp.');
+        if (! auth()->check()) {
+            return redirect()->route('login')->with('error', 'You must log in to join a community.');
         }
-        auth()->user()->subfapps()->attach($subfapp->id);
-        return redirect()->back()->with('success', 'You have joined the subfapp!');
+
+        $user = auth()->user();
+
+        // Check if user can view this community first
+        if (! $subfapp->canView($user)) {
+            abort(403, 'You do not have permission to join this community.');
+        }
+
+        // For private/hidden communities, joining might require approval
+        // For now, we'll allow direct joining if they can view the community
+        if (! $user->subfapps()->where('subfapp_id', $subfapp->id)->exists()) {
+            $user->subfapps()->attach($subfapp->id);
+            $message = $subfapp->isPrivate() || $subfapp->isHidden()
+                ? 'You have joined the private community!'
+                : 'You have joined the community!';
+
+            return redirect()->back()->with('success', $message);
+        }
+
+        return redirect()->back()->with('info', 'You are already a member of this community.');
     }
 
     public function leave(Subfapp $subfapp)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login')->with('error', 'You must log in to leave a subfapp.');
         }
         auth()->user()->subfapps()->detach($subfapp->id);
+
         return redirect()->back()->with('success', 'You have left the subfapp!');
     }
 }

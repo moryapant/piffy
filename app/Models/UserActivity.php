@@ -18,12 +18,12 @@ class UserActivity extends Model
         'subject_id',
         'performed_at',
     ];
-    
+
     protected $casts = [
         'details' => 'array',
         'performed_at' => 'datetime',
     ];
-    
+
     /**
      * Get the user that performed the activity.
      */
@@ -31,7 +31,7 @@ class UserActivity extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     /**
      * Get the subject of the activity.
      */
@@ -39,7 +39,7 @@ class UserActivity extends Model
     {
         return $this->morphTo();
     }
-    
+
     /**
      * Scope a query to only include activities of a given type.
      */
@@ -47,18 +47,18 @@ class UserActivity extends Model
     {
         return $query->where('activity_type', $type);
     }
-    
+
     /**
      * Scope a query to only include activities within a time period.
      */
     public function scopeWithinPeriod($query, $startDate, $endDate = null)
     {
         $query->where('performed_at', '>=', $startDate);
-        
+
         if ($endDate) {
             $query->where('performed_at', '<=', $endDate);
         }
-        
+
         return $query;
     }
 }

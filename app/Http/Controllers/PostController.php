@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use App\Models\Subfapp;
 use App\Models\Tag;
+use App\Models\User;
+use App\Models\Visit;
 use App\Services\PostSorting;
+use App\Services\VisitService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\Request;
@@ -24,18 +27,44 @@ class PostController extends Controller
     public function __construct(PostSorting $postSorting)
     {
         $this->postSorting = $postSorting;
-        $this->middleware('auth')->except(['index', 'show']);
+        $this->middleware('auth')->except(['index', 'show', 'trendingPosts']);
     }
 
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         $query = Post::with(['user', 'subfapp', 'images', 'tags'])
             ->withCount('comments')
-            ->when(auth()->check(), function ($query) {
-                $query->with(['userVote' => function ($query) {
-                    $query->where('user_id', auth()->id());
+            ->when($user, function ($query) use ($user) {
+                $query->with(['userVote' => function ($query) use ($user) {
+                    $query->where('user_id', $user->id);
                 }]);
             });
+
+        // Filter posts based on community visibility
+        $query->whereHas('subfapp', function ($subfappQuery) use ($user) {
+            if ($user) {
+                $subfappQuery->where(function ($q) use ($user) {
+                    // Show posts from public and restricted communities
+                    $q->whereIn('type', ['public', 'restricted'])
+                      // OR from communities user is member of
+                        ->orWhereHas('users', function ($userQuery) use ($user) {
+                            $userQuery->where('users.id', $user->id);
+                        })
+                      // OR from communities user created
+                        ->orWhere('created_by', $user->id);
+
+                    // Admins can see all posts
+                    if ($user->is_admin) {
+                        $q->orWhereIn('type', ['private', 'hidden']);
+                    }
+                });
+            } else {
+                // Non-authenticated users can only see posts from public communities
+                $subfappQuery->where('type', 'public');
+            }
+        });
 
         // Apply sorting based on last 6 hours of activity
         $sort = $request->get('sort', 'hot');
@@ -66,9 +95,27 @@ class PostController extends Controller
             return $post;
         });
 
-        // Get popular communities
-        $communities = Subfapp::withCount(['posts', 'users'])
-            ->orderBy('posts_count', 'desc')
+        // Get popular communities (only show visible ones)
+        $communitiesQuery = Subfapp::withCount(['posts', 'users']);
+
+        if ($user) {
+            $communitiesQuery->where(function ($q) use ($user) {
+                $q->where('type', '!=', 'hidden')
+                    ->orWhere('created_by', $user->id)
+                    ->orWhereHas('users', function ($userQuery) use ($user) {
+                        $userQuery->where('users.id', $user->id);
+                    });
+
+                if ($user->is_admin) {
+                    $q->orWhere('type', 'hidden');
+                }
+            });
+        } else {
+            // Non-authenticated users can only see public and restricted communities
+            $communitiesQuery->whereIn('type', ['public', 'restricted']);
+        }
+
+        $communities = $communitiesQuery->orderBy('posts_count', 'desc')
             ->take(5)
             ->get()
             ->map(function ($community) {
@@ -83,12 +130,16 @@ class PostController extends Controller
                 ];
             });
 
+        // Calculate actual statistics
+        $stats = $this->getActualStats();
+
         return Inertia::render('Welcome', [
             'posts' => $posts,
             'communities' => $communities,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'currentSort' => $sort,
+            'stats' => $stats,
         ]);
     }
 
@@ -157,6 +208,21 @@ class PostController extends Controller
             }
         }
 
+        // Record the post creation activity
+        VisitService::recordActivity(
+            $request,
+            'post_create',
+            'Created post: '.$post->title,
+            $post->id,
+            'App\\Models\\Post',
+            [
+                'title' => $post->title,
+                'subfapp_id' => $post->subfapp_id,
+                'tags_count' => $post->tags()->count(),
+                'images_count' => $post->images()->count(),
+            ]
+        );
+
         return redirect()->route('posts.show', $post)
             ->with('success', 'Post created successfully!');
     }
@@ -176,8 +242,19 @@ class PostController extends Controller
             }]);
         }
 
-        // Track post view
+        // Track post view in the post_views table
         $this->trackPostView($post, $request);
+
+        // Also track this visit in the visits table for activity tracking
+        // This ensures Inertia.js navigation is properly tracked
+        VisitService::recordActivity(
+            $request,
+            'page_view',
+            "Viewing Post: {$post->title}",
+            $post->id,
+            'Post',
+            ['post_id' => $post->id, 'post_title' => $post->title]
+        );
 
         // Process post data with image URLs and types
         $postData = $post->toArray();
@@ -328,25 +405,114 @@ class PostController extends Controller
      */
     protected function trackPostView(Post $post, Request $request): void
     {
-        // Check if this IP has viewed the post in the last 6 hours
-        $recentView = $post->views()
-            ->where('ip_address', $request->ip())
-            ->where('created_at', '>=', now()->subHours(6))
-            ->exists();
+        // Create new view record for every visit
+        $post->views()->create([
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'user_id' => auth()->id(),
+        ]);
 
-        if (!$recentView) {
-            // Create new view record
-            $post->views()->create([
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'user_id' => auth()->id(),
-            ]);
+        // Increment views count on every visit
+        $post->increment('views_count');
 
-            // Increment views count
-            $post->increment('views_count');
+        // Update trending status
+        app(PostSorting::class)->updateTrendingStatus($post);
+    }
 
-            // Update trending status
-            app(PostSorting::class)->updateTrendingStatus($post);
+    /**
+     * Get actual platform statistics for the dashboard.
+     */
+    protected function getActualStats(): array
+    {
+        // Get total posts count
+        $totalPosts = Post::count();
+
+        // Get total communities count
+        $totalCommunities = Subfapp::count();
+
+        // Get total users count
+        $totalUsers = User::count();
+
+        // Get online users (users with activity in last 15 minutes)
+        $onlineUsers = Visit::where('visited_at', '>=', now()->subMinutes(15))
+            ->distinct('user_id')
+            ->where('user_id', '!=', null)
+            ->count();
+
+        // If no one is online, show at least some activity from session data
+        if ($onlineUsers == 0) {
+            // Count unique IPs in the last 15 minutes as approximation
+            $onlineUsers = Visit::where('visited_at', '>=', now()->subMinutes(15))
+                ->distinct('ip_address')
+                ->count();
         }
+
+        // Ensure minimum values for better UX
+        $onlineUsers = max($onlineUsers, 1);
+
+        return [
+            'total_posts' => $this->formatNumber($totalPosts),
+            'total_communities' => $this->formatNumber($totalCommunities),
+            'active_users' => $this->formatNumber($totalUsers),
+            'online_users' => $onlineUsers,
+        ];
+    }
+
+    /**
+     * Format numbers for display (e.g., 1234 -> 1.2K).
+     */
+    protected function formatNumber(int $number): string
+    {
+        if ($number >= 1000000) {
+            return number_format($number / 1000000, 1).'M';
+        } elseif ($number >= 1000) {
+            return number_format($number / 1000, 1).'K';
+        }
+
+        return (string) $number;
+    }
+
+    /**
+     * Get trending posts for the API.
+     */
+    public function trendingPosts(Request $request)
+    {
+        $query = Post::with(['user', 'subfapp'])
+            ->withCount('comments')
+            ->when(auth()->check(), function ($query) {
+                $query->with(['userVote' => function ($query) {
+                    $query->where('user_id', auth()->id());
+                }]);
+            });
+
+        // Apply trending sorting
+        $posts = $this->postSorting->trending($query)
+            ->limit(5)
+            ->get();
+
+        // Format posts for the frontend
+        $formattedPosts = $posts->map(function ($post) {
+            return [
+                'id' => $post->id,
+                'title' => $post->title,
+                'score' => $post->score ?? 0,
+                'trending_score' => $post->trending_score ?? 0,
+                'created_at' => $post->created_at,
+                'user' => [
+                    'id' => $post->user->id,
+                    'name' => $post->user->name,
+                ],
+                'subfapp' => $post->subfapp ? [
+                    'id' => $post->subfapp->id,
+                    'name' => $post->subfapp->name,
+                    'display_name' => $post->subfapp->display_name,
+                ] : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'posts' => $formattedPosts,
+        ]);
     }
 }

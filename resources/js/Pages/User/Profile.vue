@@ -1,6 +1,6 @@
 <script setup>
 import MainLayout from "@/Layouts/MainLayout.vue";
-import { Head } from "@inertiajs/vue3";
+import { Head, Link } from "@inertiajs/vue3";
 import UserAvatar from "@/Components/UserAvatar.vue";
 import { timeAgo } from "@/utils/dateUtils";
 import ImageGallery from "@/Components/ImageGallery.vue";

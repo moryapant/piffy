@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta http-equiv="Content-Security-Policy" <title inertia>
+    <title inertia>
     {{ isset($page['props']['post']) ? $page['props']['post']['title'] . ' - ' . config('app.name', 'Laravel') : config('app.name', 'Laravel') }}
     </title>
 
@@ -49,22 +49,9 @@
     @inertiaHead
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            if (!window.location.pathname.startsWith('/admin') && !window.location.pathname.startsWith('/login')) {
-                fetch('/track-visit', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
-                                'content')
-                        },
-                        body: JSON.stringify({
-                            path: window.location.pathname
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => console.log('Visit tracked:', data))
-                    .catch(error => console.error('Error tracking visit:', error));
-            }
+            // Visit tracking is handled by middleware - no need for client-side tracking
+            // This prevents JSON parsing errors from missing /track-visit route
+            console.log('Page loaded:', window.location.pathname);
         });
     </script>
 </head>
@@ -74,4 +61,3 @@
 </body>
 
 </html>
-<intendo:end-usage-policy-file

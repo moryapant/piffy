@@ -42,16 +42,13 @@ const form = useForm({
     _method: 'PUT',
 });
 
-// For debugging
 const currentImages = computed(() => {
-    console.log('Current images:', props.post.images);
     const images = props.post.images || [];
     // Map images to include the full URL
     const processedImages = images.map(img => ({
         ...img,
         url: `/storage/${img.image_path}`
     }));
-    console.log('Processed images:', processedImages);
     return processedImages;
 });
 
@@ -61,7 +58,6 @@ onMounted(() => {
         form.title = props.post.title || '';
         form.content = props.post.content || '';
         form.subfapp_id = props.post.subfapp_id || '';
-        console.log('Mounted with post:', props.post);
     }
 });
 
@@ -113,15 +109,11 @@ const removeNewImage = (index) => {
 };
 
 const submit = () => {
-    console.log('Submitting form with images:', form.images);
-    console.log('Removed images:', form.removedImages);
-
     // Submit using Inertia
     form.post(route('posts.update', props.post.id), {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
-            console.log('Form submitted successfully');
             form.images = [];
             form.removedImages = [];
             markedForRemoval.value.clear();
@@ -129,9 +121,6 @@ const submit = () => {
             if (imageInput.value) {
                 imageInput.value.value = '';
             }
-        },
-        onError: (errors) => {
-            console.error('Form submission errors:', errors);
         }
     });
 };

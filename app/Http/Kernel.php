@@ -4,9 +4,7 @@ namespace App\Http;
 
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Authenticate;
-use App\Http\Middleware\RecordVisitMiddleware;
 use App\Http\Middleware\RedirectIfAuthenticated;
-use App\Http\Middleware\TrackVisits;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
@@ -87,7 +85,5 @@ class Kernel extends HttpKernel
      *
      * @return void
      */
-    public function boot()
-    {
-    }
+    public function boot() {}
 }

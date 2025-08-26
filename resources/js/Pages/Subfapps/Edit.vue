@@ -1,60 +1,42 @@
 <script setup>
 import MainLayout from '@/Layouts/MainLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
-import { 
-  UserGroupIcon, 
-  GlobeAsiaAustraliaIcon, 
-  ShieldCheckIcon, 
-  EyeSlashIcon 
-} from '@heroicons/vue/24/outline';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { ref, watch, onMounted } from 'vue';
 
-const communityTypes = [
-  {
-    id: 'public',
-    name: 'Public',
-    description: 'Anyone can view, post, and comment to this community',
-    icon: GlobeAsiaAustraliaIcon
+const props = defineProps({
+  subfapp: {
+    type: Object,
+    required: true,
   },
-  {
-    id: 'restricted',
-    name: 'Restricted',
-    description: 'Anyone can view this community, but only approved users can post',
-    icon: UserGroupIcon
-  },
-  {
-    id: 'private',
-    name: 'Private',
-    description: 'Only approved users can view and submit to this community',
-    icon: ShieldCheckIcon
-  },
-  {
-    id: 'hidden',
-    name: 'Hidden',
-    description: 'Only approved users can view this community, it won\'t appear in recommendations or searches',
-    icon: EyeSlashIcon
-  },
-];
-
-const form = useForm({
-    name: '',
-    display_name: '',
-    description: '',
-    icon: null,
-    type: 'public', // Default to public
-    color: '#0079D3', // Default Reddit-like blue
 });
 
-const communityType = ref('public');
-const uploadedIcon = ref(null);
-const iconPreview = ref(null);
+const form = useForm({
+    display_name: props.subfapp.display_name || '',
+    description: props.subfapp.description || '',
+    icon: null,
+});
 
-// Generate display name from name
-const generateDisplayName = () => {
-    if (!form.display_name) {
-        form.display_name = form.name;
+const uploadedIcon = ref(null);
+const iconPreview = ref(props.subfapp.icon ? `/storage/${props.subfapp.icon}` : null);
+
+// Debug form state on mount
+onMounted(() => {
+    console.log('Form initialized:', {
+        display_name: form.display_name,
+        errors: form.errors,
+        hasErrors: Object.keys(form.errors).length > 0
+    });
+});
+
+// Clear display_name error when user types
+watch(() => form.display_name, (newValue) => {
+    console.log('Display name changed:', newValue, 'Has error:', !!form.errors.display_name);
+    if (form.errors.display_name && newValue && newValue.trim().length > 0) {
+        // Force clear the specific error
+        delete form.errors.display_name;
+        console.log('Cleared display_name error');
     }
-};
+});
 
 // Handle icon upload
 const handleIconUpload = (e) => {
@@ -66,44 +48,84 @@ const handleIconUpload = (e) => {
         return;
     }
     
+    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+    
     uploadedIcon.value = file;
     form.icon = file; // Set file in form
+    
+    // Clear any previous errors
+    if (form.errors.icon) {
+        delete form.errors.icon;
+    }
     
     // Create preview URL
     const reader = new FileReader();
     reader.onload = (e) => {
         iconPreview.value = e.target.result;
+        console.log('Icon preview created');
     };
     reader.readAsDataURL(file);
 };
 
-// Watch for community type changes
-watch(communityType, (newType) => {
-    form.type = newType;
-});
-
 const submit = () => {
-    form.post(route('subfapps.store'), {
-        forceFormData: true, // Force multipart/form-data for file uploads
-        onSuccess: () => {
-            form.reset();
-            uploadedIcon.value = null;
-            iconPreview.value = null;
-        },
+    console.log('Submitting form with data:', {
+        display_name: form.display_name,
+        description: form.description,
+        icon: form.icon
     });
+    
+    // Clear all errors before submitting
+    form.clearErrors();
+    
+    // If there's a file, we need to use FormData manually
+    if (form.icon) {
+        console.log('File detected, creating FormData manually. File:', form.icon.name);
+        
+        const formData = new FormData();
+        formData.append('display_name', form.display_name || '');
+        formData.append('description', form.description || '');
+        formData.append('icon', form.icon);
+        formData.append('_method', 'PATCH');
+        
+        // Use router.post with FormData
+        router.post(route('subfapps.update', props.subfapp.id), formData, {
+            onSuccess: () => {
+                console.log('Form submitted successfully');
+            },
+            onError: (errors) => {
+                console.log('Form submission errors:', errors);
+            },
+            onFinish: () => {
+                console.log('Form submission finished');
+            }
+        });
+    } else {
+        console.log('No file, using regular form submission');
+        form.patch(route('subfapps.update', props.subfapp.id), {
+            onSuccess: () => {
+                console.log('Form submitted successfully');
+            },
+            onError: (errors) => {
+                console.log('Form submission errors:', errors);
+            },
+            onFinish: () => {
+                console.log('Form submission finished');
+            }
+        });
+    }
 };
 </script>
 
 <template>
-    <Head title="Create Community" />
+    <Head :title="`Edit ${subfapp.display_name}`" />
     <MainLayout>
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <!-- Header -->
             <div class="bg-white dark:bg-gray-900 rounded-t-md shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-1">
                 <div class="flex items-center justify-between">
-                    <h1 class="text-xl font-bold text-gray-900 dark:text-white">Create a community</h1>
+                    <h1 class="text-xl font-bold text-gray-900 dark:text-white">Edit {{ subfapp.display_name }}</h1>
                     <Link
-                        :href="route('home')"
+                        :href="route('subfapps.show', subfapp.id)"
                         class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                         Cancel
@@ -114,7 +136,7 @@ const submit = () => {
             <!-- Main Content -->
             <div class="bg-white dark:bg-gray-900 rounded-b-md shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <form @submit.prevent="submit" class="space-y-6">
-                    <!-- Community Name -->
+                    <!-- Community Name (Read-only) -->
                     <div>
                         <label for="name" class="block text-base font-medium text-gray-900 dark:text-gray-100 mb-2">Name</label>
                         <div class="mt-1 relative rounded-md shadow-sm">
@@ -124,36 +146,55 @@ const submit = () => {
                             <input
                                 type="text"
                                 id="name"
-                                v-model="form.name"
-                                class="pl-8 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm focus:ring-blue-500 focus:border-blue-500 py-3"
-                                :class="{ 'border-red-500': form.errors.name }"
-                                required
-                                @input="generateDisplayName"
-                                placeholder="community-name"
+                                :value="subfapp.name"
+                                class="pl-8 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm py-3 bg-gray-50 dark:bg-gray-700"
+                                readonly
                             />
                         </div>
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            Community names cannot be changed and must follow the naming guidelines
+                            Community names cannot be changed
                         </p>
-                        <p v-if="form.errors.name" class="mt-1 text-sm text-red-500">{{ form.errors.name }}</p>
                     </div>
 
                     <!-- Display Name -->
                     <div>
-                        <label for="display_name" class="block text-base font-medium text-gray-900 dark:text-gray-100 mb-2">Display Name</label>
+                        <label for="display_name" class="block text-base font-medium text-gray-900 dark:text-gray-100 mb-2">
+                            Display Name
+                            <button 
+                                type="button" 
+                                @click="() => { form.errors = {}; console.log('All errors cleared manually'); }" 
+                                class="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                                v-if="Object.keys(form.errors).length > 0"
+                            >
+                                Clear Errors
+                            </button>
+                        </label>
                         <input
                             type="text"
                             id="display_name"
                             v-model="form.display_name"
-                            class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm focus:ring-blue-500 focus:border-blue-500 py-3"
-                            :class="{ 'border-red-500': form.errors.display_name }"
+                            class="block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 py-3"
+                            :class="{ 
+                                'border-red-500 dark:border-red-500': form.errors.display_name,
+                                'border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white': !form.errors.display_name
+                            }"
                             required
                             placeholder="Community Display Name"
+                            @input="(event) => { 
+                                console.log('Input event fired:', event.target.value, 'Form value:', form.display_name, 'Has error:', !!form.errors.display_name);
+                                if (form.errors.display_name && event.target.value && event.target.value.trim().length > 0) {
+                                    delete form.errors.display_name;
+                                    console.log('Error cleared via input event');
+                                }
+                            }"
                         />
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                             This is how your community name will be shown publicly
                         </p>
-                        <p v-if="form.errors.display_name" class="mt-1 text-sm text-red-500">{{ form.errors.display_name }}</p>
+                        <p v-if="form.errors.display_name" class="mt-1 text-sm text-red-500">
+                            {{ form.errors.display_name }}
+                            <span class="ml-2 text-xs">(Debug: '{{ form.display_name }}')</span>
+                        </p>
                     </div>
 
                     <!-- Community Icon -->
@@ -165,9 +206,9 @@ const submit = () => {
                                     class="h-24 w-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 flex items-center justify-center"
                                 >
                                     <img v-if="iconPreview" :src="iconPreview" class="h-full w-full object-cover" />
-                                    <svg v-else class="h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                    </svg>
+                                    <div v-else class="flex items-center justify-center w-full h-full rounded-full bg-gradient-to-br from-orange-400 to-pink-500">
+                                        <span class="text-2xl font-black text-white">{{ subfapp.display_name[0] }}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex-grow pt-1">
@@ -175,7 +216,7 @@ const submit = () => {
                                     for="community-icon"
                                     class="inline-block px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
                                 >
-                                    Upload Icon
+                                    Upload New Icon
                                     <input
                                         id="community-icon"
                                         type="file"
@@ -208,62 +249,10 @@ const submit = () => {
                         <p v-if="form.errors.description" class="mt-1 text-sm text-red-500">{{ form.errors.description }}</p>
                     </div>
 
-                    <!-- Community Type -->
-                    <div>
-                        <label class="block text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Community Type</label>
-                        <div class="space-y-4">
-                            <div 
-                                v-for="type in communityTypes" 
-                                :key="type.id"
-                                class="flex border border-gray-200 dark:border-gray-700 rounded-md p-4 cursor-pointer"
-                                :class="{ 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800': communityType === type.id }"
-                                @click="communityType = type.id"
-                            >
-                                <div class="flex-shrink-0">
-                                    <component :is="type.icon" class="h-6 w-6 text-gray-500 dark:text-gray-400" :class="{ 'text-blue-500 dark:text-blue-400': communityType === type.id }" />
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-base font-medium text-gray-900 dark:text-white" :class="{ 'text-blue-700 dark:text-blue-400': communityType === type.id }">
-                                        {{ type.name }}
-                                    </p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        {{ type.description }}
-                                    </p>
-                                </div>
-                                <div class="ml-auto flex items-center">
-                                    <div 
-                                        class="h-5 w-5 border-2 rounded-full flex items-center justify-center" 
-                                        :class="communityType === type.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'"
-                                    >
-                                        <svg v-if="communityType === type.id" class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Color Theme -->
-                    <div>
-                        <label for="color" class="block text-base font-medium text-gray-900 dark:text-gray-100 mb-2">Community Theme</label>
-                        <div class="flex items-center space-x-4">
-                            <input
-                                type="color"
-                                id="color"
-                                v-model="form.color"
-                                class="h-10 w-10 border-0 p-0 rounded-md cursor-pointer"
-                            />
-                            <span class="text-sm text-gray-700 dark:text-gray-300">
-                                Choose a primary color for your community theme
-                            </span>
-                        </div>
-                    </div>
-
                     <!-- Submit Button -->
                     <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
                         <Link
-                            :href="route('home')"
+                            :href="route('subfapps.show', subfapp.id)"
                             class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                             Cancel
@@ -277,7 +266,7 @@ const submit = () => {
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            {{ form.processing ? "Creating..." : "Create Community" }}
+                            {{ form.processing ? "Saving..." : "Save Changes" }}
                         </button>
                     </div>
                 </form>

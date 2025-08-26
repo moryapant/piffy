@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Events\VisitEvent;
 use App\Models\Visit;
 use Closure;
 use Illuminate\Http\Request;
@@ -20,28 +19,28 @@ class RecordVisitMiddleware
         // This will run BEFORE the request is handled
         // Let's write directly to a file to avoid any Laravel logging issues
         file_put_contents(
-            storage_path('logs/visits.log'), 
-            date('[Y-m-d H:i:s] ') . "Before request: " . $request->fullUrl() . PHP_EOL,
+            storage_path('logs/visits.log'),
+            date('[Y-m-d H:i:s] ').'Before request: '.$request->fullUrl().PHP_EOL,
             FILE_APPEND
         );
-        
+
         $response = $next($request);
-        
+
         // This will run AFTER the request is handled
         file_put_contents(
-            storage_path('logs/visits.log'), 
-            date('[Y-m-d H:i:s] ') . "After request: " . $request->fullUrl() . PHP_EOL,
+            storage_path('logs/visits.log'),
+            date('[Y-m-d H:i:s] ').'After request: '.$request->fullUrl().PHP_EOL,
             FILE_APPEND
         );
-        
+
         // Directly insert into the database without using events
-        if (!$request->ajax() && 
-            !$request->wantsJson() && 
-            $request->method() === 'GET' && 
-            !str_starts_with($request->path(), '_debugbar')) {
-                
+        if (! $request->ajax() &&
+            ! $request->wantsJson() &&
+            $request->method() === 'GET' &&
+            ! str_starts_with($request->path(), '_debugbar')) {
+
             $userId = $request->user() ? $request->user()->id : null;
-            
+
             try {
                 $visit = new Visit([
                     'ip_address' => $request->ip(),
@@ -49,24 +48,24 @@ class RecordVisitMiddleware
                     'page_visited' => $request->fullUrl(),
                     'page_title' => $this->getPageTitle($request),
                     'user_id' => $userId,
-                    'visited_at' => now()
+                    'visited_at' => now(),
                 ]);
-                
+
                 $result = $visit->save();
-                
+
                 file_put_contents(
-                    storage_path('logs/visits.log'), 
-                    date('[Y-m-d H:i:s] ') . "Visit saved: " . ($result ? "Success" : "Failure") . 
-                    " - URL: " . $request->fullUrl() . 
-                    " - IP: " . $request->ip() . 
-                    " - User ID: " . ($userId ?? 'none') . PHP_EOL,
+                    storage_path('logs/visits.log'),
+                    date('[Y-m-d H:i:s] ').'Visit saved: '.($result ? 'Success' : 'Failure').
+                    ' - URL: '.$request->fullUrl().
+                    ' - IP: '.$request->ip().
+                    ' - User ID: '.($userId ?? 'none').PHP_EOL,
                     FILE_APPEND
                 );
             } catch (\Exception $e) {
                 file_put_contents(
-                    storage_path('logs/visits.log'), 
-                    date('[Y-m-d H:i:s] ') . "Visit save error: " . $e->getMessage() . 
-                    " - URL: " . $request->fullUrl() . PHP_EOL,
+                    storage_path('logs/visits.log'),
+                    date('[Y-m-d H:i:s] ').'Visit save error: '.$e->getMessage().
+                    ' - URL: '.$request->fullUrl().PHP_EOL,
                     FILE_APPEND
                 );
             }
@@ -74,7 +73,7 @@ class RecordVisitMiddleware
 
         return $response;
     }
-    
+
     /**
      * Get a meaningful page title based on the route
      */
@@ -82,10 +81,10 @@ class RecordVisitMiddleware
     {
         $routeName = $request->route() ? $request->route()->getName() : null;
         $path = $request->path();
-        
+
         // Store the URL as a fallback
         $title = $request->fullUrl();
-        
+
         // Try to get a meaningful title based on the route
         if ($routeName) {
             if ($routeName === 'posts.show' && $request->route('post')) {
@@ -95,7 +94,7 @@ class RecordVisitMiddleware
                     $title = "Post: {$post->title}";
                 }
             } elseif ($routeName === 'posts.index') {
-                $title = "All Posts";
+                $title = 'All Posts';
             } elseif ($routeName === 'subfapps.show' && $request->route('subfapp')) {
                 // For subfapp pages
                 $subfapp = \App\Models\Subfapp::find($request->route('subfapp'));
@@ -109,10 +108,10 @@ class RecordVisitMiddleware
                     $title = "User Profile: {$user->name}";
                 }
             } elseif ($routeName === 'admin.index') {
-                $title = "Admin Dashboard";
+                $title = 'Admin Dashboard';
             } elseif (strpos($routeName, 'admin.') === 0) {
                 // Other admin pages
-                $title = "Admin: " . ucfirst(str_replace(['admin.', '.'], ['', ' '], $routeName));
+                $title = 'Admin: '.ucfirst(str_replace(['admin.', '.'], ['', ' '], $routeName));
             } else {
                 // For other named routes, format the route name
                 $title = ucwords(str_replace(['.', '-'], ' ', $routeName));
@@ -121,7 +120,7 @@ class RecordVisitMiddleware
             // For routes without names, try to make the path readable
             $title = ucwords(str_replace(['-', '/'], [' ', ' > '], $path));
         }
-        
+
         return $title;
     }
 }

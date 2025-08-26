@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamp('visited_at');
             $table->timestamps();
-            
+
             // Indexes for performance
             $table->index('visited_at');
             $table->index('ip_address');

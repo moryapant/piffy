@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fix CSS compatibility issues */
+* {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Fix gap property compatibility */
+.flex {
+    gap: var(--tw-space-x-reverse, 0);
+}
+
+.grid {
+    gap: var(--tw-gap, 0);
+}
+
+/* Fix any potential column-gap issues */
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }

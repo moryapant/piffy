@@ -18,6 +18,16 @@ class Subfapp extends Model
         'cover_image',
         'created_by',
         'member_count',
+        'views_count',
+        'type',
+        'nsfw',
+        'color',
+    ];
+
+    protected $casts = [
+        'views_count' => 'integer',
+        'member_count' => 'integer',
+        'nsfw' => 'boolean',
     ];
 
     public function creator()
@@ -34,7 +44,7 @@ class Subfapp extends Model
     {
         parent::boot();
 
-        static::deleting(function($community) {
+        static::deleting(function ($community) {
             // Delete all posts in the community
             $community->posts()->delete();
         });
@@ -43,5 +53,59 @@ class Subfapp extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'user_subfapp');
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->type === 'public';
+    }
+
+    public function isRestricted(): bool
+    {
+        return $this->type === 'restricted';
+    }
+
+    public function isPrivate(): bool
+    {
+        return $this->type === 'private';
+    }
+
+    public function isHidden(): bool
+    {
+        return $this->type === 'hidden';
+    }
+
+    public function canView(?User $user): bool
+    {
+        if ($this->isPublic() || $this->isRestricted()) {
+            return true;
+        }
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->is_admin || $this->created_by === $user->id) {
+            return true;
+        }
+
+        return $this->users()->where('users.id', $user->id)->exists();
+    }
+
+    public function canPost(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->isPublic()) {
+            return true;
+        }
+
+        if ($user->is_admin || $this->created_by === $user->id) {
+            return true;
+        }
+
+        return $this->users()->where('users.id', $user->id)->exists();
     }
 }
