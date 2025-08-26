@@ -177,43 +177,46 @@ const toggleJoinStatus = (subfapp) => {
         </div>
 
         <!-- Filters and Controls -->
-        <div class="mb-6 flex flex-col space-y-4 md:flex-row md:items-center md:justify-end">
-          
-          <div class="flex items-center space-x-2">
-            <div class="flex items-center bg-white dark:bg-gray-800 rounded-full p-1 border border-gray-200 dark:border-gray-700">
+        <div class="mb-6 flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between">
+          <!-- Sort Filters -->
+          <div class="flex items-center justify-center sm:justify-start">
+            <div class="flex items-center bg-white dark:bg-gray-800 rounded-full p-1 border border-gray-200 dark:border-gray-700 w-full sm:w-auto">
               <button
                 @click="sortBy = 'popular'"
-                class="px-4 py-1.5 text-sm font-medium rounded-full"
-                :class="sortBy === 'popular' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300'"
+                class="flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200"
+                :class="sortBy === 'popular' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
               >
-                <FireIcon class="h-4 w-4 inline mr-1" />
-                Popular
+                <FireIcon class="h-3 w-3 sm:h-4 sm:w-4 inline sm:mr-1" />
+                <span class="hidden sm:inline">Popular</span>
               </button>
               <button
                 @click="sortBy = 'newest'"
-                class="px-4 py-1.5 text-sm font-medium rounded-full"
-                :class="sortBy === 'newest' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300'"
+                class="flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200"
+                :class="sortBy === 'newest' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
               >
-                <ClockIcon class="h-4 w-4 inline mr-1" />
-                New
+                <ClockIcon class="h-3 w-3 sm:h-4 sm:w-4 inline sm:mr-1" />
+                <span class="hidden sm:inline">New</span>
               </button>
               <button
                 @click="sortBy = 'trending'"
-                class="px-4 py-1.5 text-sm font-medium rounded-full"
-                :class="sortBy === 'trending' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300'"
+                class="flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200"
+                :class="sortBy === 'trending' ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
               >
-                <ArrowTrendingUpIcon class="h-4 w-4 inline mr-1" />
-                Trending
+                <ArrowTrendingUpIcon class="h-3 w-3 sm:h-4 sm:w-4 inline sm:mr-1" />
+                <span class="hidden sm:inline">Trending</span>
               </button>
             </div>
-            
+          </div>
+          
+          <!-- Create Community Button -->
+          <div class="flex justify-center sm:justify-end">
             <Link
               v-if="$page.props.auth.user"
               :href="route('subfapps.create')"
-              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full shadow-sm transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              class="inline-flex items-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full shadow-sm transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <svg
-                class="w-4 h-4 mr-1.5"
+                class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -225,7 +228,8 @@ const toggleJoinStatus = (subfapp) => {
                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 />
               </svg>
-              Create Community
+              <span class="hidden sm:inline ml-1.5">Create Community</span>
+              <span class="sm:hidden">Create</span>
             </Link>
           </div>
         </div>

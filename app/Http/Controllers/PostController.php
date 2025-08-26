@@ -229,11 +229,16 @@ class PostController extends Controller
 
     public function show(Post $post, Request $request)
     {
-        $post->load(['user', 'subfapp', 'images', 'tags'])
+        $post->load(['user', 'subfapp.users', 'images', 'tags'])
             ->loadCount('comments')
             ->load(['comments' => function ($query) {
                 $query->with('user')->latest();
             }]);
+
+        // Load member count for subfapp
+        if ($post->subfapp) {
+            $post->subfapp->loadCount('users');
+        }
 
         // Only load user vote if authenticated
         if (auth()->check()) {
@@ -256,6 +261,9 @@ class PostController extends Controller
             ['post_id' => $post->id, 'post_title' => $post->title]
         );
 
+        // Get related posts
+        $relatedPosts = $this->getRelatedPosts($post);
+
         // Process post data with image URLs and types
         $postData = $post->toArray();
         $postData['images'] = collect($post->images)->map(function ($image) {
@@ -270,6 +278,7 @@ class PostController extends Controller
 
         return Inertia::render('Post/Show', [
             'post' => $postData,
+            'relatedPosts' => $relatedPosts,
         ]);
     }
 
@@ -398,6 +407,58 @@ class PostController extends Controller
 
         return redirect()->route('posts.index')
             ->with('success', 'Post deleted successfully!');
+    }
+
+    /**
+     * Get related posts for the given post.
+     */
+    protected function getRelatedPosts(Post $post): array
+    {
+        $query = Post::with(['user', 'subfapp'])
+            ->withCount('comments')
+            ->where('id', '!=', $post->id)
+            ->where(function ($q) use ($post) {
+                // First try to get posts from the same subfapp
+                if ($post->subfapp_id) {
+                    $q->where('subfapp_id', $post->subfapp_id);
+                }
+            });
+
+        $relatedPosts = $query->orderBy('score', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->limit(3)
+            ->get();
+
+        // If we don't have enough posts from the same subfapp, get other popular posts
+        if ($relatedPosts->count() < 3) {
+            $remaining = 3 - $relatedPosts->count();
+            $excludeIds = $relatedPosts->pluck('id')->push($post->id)->toArray();
+
+            $additionalPosts = Post::with(['user', 'subfapp'])
+                ->withCount('comments')
+                ->whereNotIn('id', $excludeIds)
+                ->orderBy('score', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->limit($remaining)
+                ->get();
+
+            $relatedPosts = $relatedPosts->concat($additionalPosts);
+        }
+
+        return $relatedPosts->map(function ($relatedPost) {
+            return [
+                'id' => $relatedPost->id,
+                'title' => $relatedPost->title,
+                'score' => $relatedPost->score ?? 0,
+                'comments_count' => $relatedPost->comments_count,
+                'created_at' => $relatedPost->created_at,
+                'subfapp' => $relatedPost->subfapp ? [
+                    'id' => $relatedPost->subfapp->id,
+                    'name' => $relatedPost->subfapp->name,
+                    'display_name' => $relatedPost->subfapp->display_name,
+                ] : null,
+            ];
+        })->toArray();
     }
 
     /**

@@ -13,6 +13,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  relatedPosts: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const voteForm = useForm({
@@ -270,11 +274,11 @@ const shareOnTwitter = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
-                  <span>{{ post.subfapp.users_count || Math.floor(Math.random() * 900) + 100 }} members</span>
+                  <span>{{ post.subfapp.users_count || 0 }} {{ (post.subfapp.users_count || 0) === 1 ? 'member' : 'members' }}</span>
                 </div>
                 <div class="flex items-center">
                   <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse mr-1.5"></div>
-                  <span>{{ Math.floor(Math.random() * 50) + 5 }} online</span>
+                  <span>{{ Math.max(1, Math.floor((post.subfapp.users_count || 0) * 0.1)) }} online</span>
                 </div>
               </div>
               
@@ -288,24 +292,24 @@ const shareOnTwitter = () => {
           </div>
           
           <!-- Related Posts -->
-          <div class="bg-white rounded-md border border-gray-200 shadow overflow-hidden">
+          <div class="bg-white rounded-md border border-gray-200 shadow overflow-hidden" v-if="relatedPosts.length > 0">
             <div class="p-3 border-b border-gray-100 bg-gray-50">
               <h3 class="font-bold text-gray-800">Related Posts</h3>
             </div>
             <div class="divide-y divide-gray-100">
-              <div v-for="i in 3" :key="i" class="p-3 hover:bg-gray-50 transition-colors">
-                <Link href="#" class="block">
+              <div v-for="relatedPost in relatedPosts" :key="relatedPost.id" class="p-3 hover:bg-gray-50 transition-colors">
+                <Link :href="route('posts.show', relatedPost.id)" class="block">
                   <h4 class="text-sm font-medium text-gray-900 hover:text-orange-600 transition-colors mb-1 line-clamp-2">
-                    {{ 
-                      ["Check out this interesting topic related to " + post.title,
-                       "Another great post about " + (post.subfapp ? post.subfapp.name : "this topic"),
-                       "You might also like: similar content to what you're reading"][i-1] 
-                    }}
+                    {{ relatedPost.title }}
                   </h4>
                   <div class="flex items-center text-xs text-gray-500">
-                    <span class="mr-1">{{ Math.floor(Math.random() * 500) + 10 }} votes</span>
+                    <span class="mr-1">{{ relatedPost.score }} {{ relatedPost.score === 1 ? 'vote' : 'votes' }}</span>
                     <span class="mx-1">•</span>
-                    <span>{{ Math.floor(Math.random() * 50) + 5 }} comments</span>
+                    <span>{{ relatedPost.comments_count }} {{ relatedPost.comments_count === 1 ? 'comment' : 'comments' }}</span>
+                    <template v-if="relatedPost.subfapp">
+                      <span class="mx-1">•</span>
+                      <span>f/{{ relatedPost.subfapp.name }}</span>
+                    </template>
                   </div>
                 </Link>
               </div>

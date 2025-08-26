@@ -6,13 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title inertia>
-    {{ isset($page['props']['post']) ? $page['props']['post']['title'] . ' - ' . config('app.name', 'Laravel') : config('app.name', 'Laravel') }}
+    {{ isset($page['props']['post']) ? $page['props']['post']['title'] . ' - ' . config('app.name', 'Fappify') : config('app.name', 'Fappify') }}
     </title>
 
     <!-- Open Graph Tags -->
     @if (isset($page['props']['post']))
         <meta property="og:type" content="article" />
-        <meta property="og:title" content="{{ $page['props']['post']['title'] ?? config('app.name', 'Laravel') }}" />
+        <meta property="og:title" content="{{ $page['props']['post']['title'] ?? config('app.name', 'Fappify') }}" />
         <meta property="og:description"
             content="{{ Str::limit(strip_tags($page['props']['post']['body'] ?? ''), 200) }}" />
         @if (isset($page['props']['post']['images']) && count($page['props']['post']['images']) > 0)
@@ -30,7 +30,7 @@
 
         <!-- Twitter Card Tags -->
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="{{ $page['props']['post']['title'] ?? config('app.name', 'Laravel') }}" />
+        <meta name="twitter:title" content="{{ $page['props']['post']['title'] ?? config('app.name', 'Fappify') }}" />
         <meta name="twitter:description"
             content="{{ Str::limit(strip_tags($page['props']['post']['body'] ?? ''), 200) }}" />
         @if (isset($page['props']['post']['images']) && count($page['props']['post']['images']) > 0)
