@@ -6,7 +6,7 @@ import Pagination from "@/Components/Pagination.vue";
 import PostSortTabs from "@/Components/PostSortTabs.vue";
 import { timeAgo } from "@/utils/dateUtils";
 import ImageGallery from "@/Components/ImageGallery.vue";
-import VoteButtonHorizontal from "@/Components/VoteButtonHorizontal.vue";
+import PostInteractions from "@/Components/PostInteractions.vue";
 import ConfirmModal from "@/Components/ConfirmModal.vue";
 
 const coverImageInput = ref(null);
@@ -99,7 +99,7 @@ const props = defineProps({
   <MainLayout>
     <!-- Banner and Header -->
     <div
-      class="overflow-hidden relative h-96 group"
+      class="overflow-hidden relative h-[420px] sm:h-96 group"
       @mouseenter="isHoveringCover = true"
       @mouseleave="isHoveringCover = false"
     >
@@ -182,12 +182,13 @@ const props = defineProps({
           "
         />
       </div>
-      <div class="flex items-end px-4 mx-auto max-w-7xl h-full sm:px-6 lg:px-8">
+      <div class="flex items-end px-3 sm:px-4 mx-auto max-w-7xl h-full sm:px-6 lg:px-8">
         <div
-          class="flex justify-between items-center px-6 py-6 w-full rounded-2xl border-2 border-white/20 shadow-2xl backdrop-blur-md bg-white/95 sm:px-8 sm:py-8"
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-5 py-5 w-full rounded-2xl border border-white/30 shadow-xl backdrop-blur-md bg-white/95 sm:px-8 sm:py-7"
         >
+          <!-- Left Section (Avatar + Info) -->
           <!-- Left side with avatar and info -->
-          <div class="flex items-center space-x-4 sm:space-x-6">
+          <div class="flex items-center space-x-4 sm:space-x-6 min-w-0">
             <!-- Subfapp Icon with improved visibility -->
             <div
               class="flex overflow-hidden relative justify-center items-center -mt-16 w-24 h-24 bg-white border-4 border-white rounded-full shadow-2xl ring-4 ring-orange-200 sm:w-36 sm:h-36 sm:-mt-20 group"
@@ -245,18 +246,40 @@ const props = defineProps({
                 </button>
               </div>
             </div>
-            <!-- Subfapp Info with improved text -->
-            <div class="flex-grow">
-              <h1
-                class="text-2xl font-black leading-tight gradient-text-animated sm:text-3xl"
-              >
+            <!-- Subfapp Info with improved text & breadcrumb -->
+            <div class="flex-grow min-w-0">
+              <nav aria-label="Breadcrumb" class="mb-1 hidden sm:block">
+                <ol class="flex items-center text-[11px] font-medium text-gray-500 gap-1">
+                  <li>
+                    <Link href="/" class="hover:text-orange-600 transition-colors">Home</Link>
+                  </li>
+                  <li class="text-gray-300" aria-hidden="true">/</li>
+                  <li class="text-gray-400 truncate max-w-[140px]">Communities</li>
+                  <li class="text-gray-300" aria-hidden="true">/</li>
+                  <li class="text-gray-900 truncate max-w-[180px]" :title="subfapp.display_name">f/{{ subfapp.name }}</li>
+                </ol>
+              </nav>
+              <h1 class="text-2xl font-black leading-tight gradient-text-animated sm:text-3xl truncate" :title="subfapp.display_name">
                 {{ subfapp.display_name }}
               </h1>
-              <p class="text-base font-semibold text-fuchsia-600 sm:text-lg">f/{{ subfapp.name }}</p>
+              <p class="text-sm sm:text-base font-semibold text-fuchsia-600">f/{{ subfapp.name }}</p>
+              <div class="flex items-center gap-3 mt-2 sm:mt-3 text-xs sm:text-sm text-gray-500">
+                <div class="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <span>{{ membersCount }} {{ membersCount === 1 ? 'member' : 'members' }}</span>
+                </div>
+                <span class="hidden sm:inline text-gray-300">•</span>
+                <div class="flex items-center gap-1">
+                  <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>{{ Math.max(1, Math.floor(membersCount * 0.1)) }} online</span>
+                </div>
+              </div>
             </div>
 
             <!-- Desktop Join/Leave Button -->
-            <div class="hidden items-center space-x-3 lg:flex">
+            <div class="hidden items-center space-x-3 md:flex">
               <!-- Owner Controls -->
               <div v-if="$page.props.auth.user?.id === subfapp.created_by" class="flex items-center space-x-2">
                 <Link
@@ -285,7 +308,7 @@ const props = defineProps({
                 :href="route('subfapp.join', subfapp.id)"
                 method="post"
                 as="button"
-                class="inline-flex items-center px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-pink-500 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:from-orange-600 hover:to-pink-600"
+                class="inline-flex items-center px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-pink-500 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:from-orange-600 hover:to-pink-600"
               >
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -297,7 +320,7 @@ const props = defineProps({
                 :href="route('subfapp.leave', subfapp.id)"
                 method="delete"
                 as="button"
-                class="inline-flex items-center px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:from-red-600 hover:to-pink-600"
+                class="inline-flex items-center px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:from-red-600 hover:to-pink-600"
               >
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -311,7 +334,7 @@ const props = defineProps({
     </div>
 
     <!-- Main Content -->
-    <div class="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
+  <div class="px-3 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
       <div class="flex flex-col gap-6 lg:flex-row">
         <!-- Left Column: Posts -->
         <div class="flex-1 order-2 space-y-6 lg:order-1">
@@ -370,7 +393,7 @@ const props = defineProps({
             </Link>
           </div>
           <!-- Posts List -->
-          <div class="space-y-4">
+          <div class="space-y-4 sm:space-y-5">
             <div
               v-for="post in posts.data"
               :key="post.id"
@@ -378,7 +401,7 @@ const props = defineProps({
             >
               <div class="p-4 sm:p-6">
                 <!-- Post Header -->
-                <div class="flex items-center mb-4 space-x-3">
+                <div class="flex items-center mb-3 sm:mb-4 space-x-3">
                   <!-- User Avatar -->
                   <div class="flex overflow-hidden justify-center items-center w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full ring-2 ring-orange-200">
                     <span class="text-sm font-bold text-white">{{
@@ -401,14 +424,14 @@ const props = defineProps({
                 </div>
 
                 <!-- Post Content -->
-                <div class="space-y-4">
+                <div class="space-y-3 sm:space-y-4">
                   <Link :href="route('posts.show', post.id)">
-                    <h2 class="text-xl font-bold text-gray-900 transition-colors duration-200 group-hover:text-orange-600 leading-tight mb-2">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-900 transition-colors duration-200 group-hover:text-orange-600 leading-snug mb-2">
                       {{ post.title }}
                     </h2>
                     <div
                       v-if="post.content"
-                      class="text-sm leading-relaxed text-gray-600 line-clamp-3 mb-3"
+                      class="text-sm leading-relaxed text-gray-600 line-clamp-3 mb-2 sm:mb-3"
                       v-html="post.content"
                     ></div>
                   </Link>
@@ -430,63 +453,12 @@ const props = defineProps({
                   </div>
                 </div>
 
-                <!-- Post Actions (Unified horizontal layout) -->
-                <div class="flex items-center flex-wrap gap-2 pt-4 mt-4 border-t border-gray-100">
-                  <!-- Vote Buttons -->
-                  <VoteButtonHorizontal 
-                    :content="post"
-                    size="medium"
-                    :compact="true"
-                    @vote="vote"
+                <!-- Post Actions (Standardized) -->
+                <div class="pt-3 sm:pt-4 mt-3 sm:mt-4 border-t border-gray-100">
+                  <PostInteractions 
+                    :post="post" 
+                    @vote="vote" 
                   />
-
-                  <!-- Comments -->
-                  <Link
-                    :href="route('posts.show', post.id)"
-                    class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-orange-50 hover:text-orange-600 transition-colors duration-200 text-gray-700"
-                    @click.stop
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <span class="font-medium text-xs">{{ post.comments_count || 0 }} {{ post.comments_count === 1 ? 'comment' : 'comments' }}</span>
-                  </Link>
-
-                  <!-- Views Count -->
-                  <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-50 text-gray-600">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span class="font-medium text-xs">{{ post.views_count || 0 }} {{ (post.views_count || 0) === 1 ? 'view' : 'views' }}</span>
-                  </div>
-
-                  <!-- Share Button -->
-                  <button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </svg>
-                    <span class="font-medium text-xs">Share</span>
-                  </button>
-
-                  <!-- Save Button -->
-                  <button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                    <span class="font-medium text-xs">Save</span>
-                  </button>
-
-                  <!-- Award Button -->
-                  <button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700">
-                    <span class="text-sm">🏆</span>
-                    <span class="font-medium text-xs">Award</span>
-                  </button>
-
-                  <!-- NSFW Badge -->
-                  <span v-if="post.nsfw" class="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 border border-red-200">
-                    NSFW
-                  </span>
                 </div>
               </div>
             </div>
@@ -648,12 +620,6 @@ const props = defineProps({
                     </svg>
                     Create New Post
                   </Link>
-                  <button class="flex items-center px-3 py-2 text-sm font-medium text-fuchsia-700 bg-fuchsia-50 rounded-lg hover:bg-fuchsia-100 transition-colors duration-200">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </svg>
-                    Share Community
-                  </button>
                 </div>
               </div>
             </div>
@@ -764,11 +730,3 @@ const props = defineProps({
   background-clip: text;
 }
 </style>
-
-const shareOnFacebook = () => {
-  if (typeof window !== 'undefined') {
-    const subfappUrl = window.location.href;
-    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(subfappUrl)}`;
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-  }
-};

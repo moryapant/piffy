@@ -13,8 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `vendor/bin/phpunit` - Run PHP tests
 
 ### Frontend (Vue.js/Inertia.js)
-- `npm run dev` - Start Vite development server with HMR
-- `npm run build` - Build assets for production
+- `yarn dev` - Start Vite development server with HMR
+- `yarn build` - Build assets for production
 
 ### Combined Development
 - `composer run dev` - Run all development services concurrently (Laravel server, queue worker, logs, and Vite)
@@ -145,7 +145,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - Do not change the application's dependencies without approval.
 
 ## Frontend Bundling
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `yarn build`, `yarn dev`, or `composer run dev`. Ask them.
 
 ## Replies
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
@@ -300,7 +300,7 @@ Route::get('/users', function () {
 - When creating tests, make use of `php artisan make:test [options] <name>` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
 
 ### Vite Error
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `yarn build` or ask the user to run `yarn dev` or `composer run dev`.
 
 
 === laravel/v11 rules ===

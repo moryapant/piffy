@@ -9,7 +9,7 @@ import { timeAgo } from "@/utils/dateUtils";
 import { router } from "@inertiajs/vue3";
 import axios from 'axios';
 import ImageGallery from "@/Components/ImageGallery.vue"; // This line was already present in your code
-import VoteButtonHorizontal from "@/Components/VoteButtonHorizontal.vue";
+import PostInteractions from "@/Components/PostInteractions.vue";
 
 const props = defineProps({
   posts: {
@@ -284,7 +284,7 @@ onMounted(() => {
               </div>
               
               <!-- Activities list -->
-              <div v-else-if="recentActivities.length > 0" v-for="activity in recentActivities.slice(0, 8)" :key="'activity-' + activity.id" class="px-4 py-3 hover:bg-gray-50 transition-colors duration-200 cursor-pointer">
+              <div v-else-if="recentActivities && recentActivities.length > 0" v-for="activity in recentActivities.slice(0, 8)" :key="'activity-' + activity.id" class="px-4 py-3 hover:bg-gray-50 transition-colors duration-200 cursor-pointer">
                 <div class="flex items-start space-x-3">
                   <div class="flex-shrink-0 mt-0.5">
                     <div class="flex items-center justify-center">
@@ -669,63 +669,11 @@ onMounted(() => {
                     </div>
 
                     <!-- Post Actions (with inline vote buttons) -->
-                    <div class="flex items-center flex-wrap gap-2 mt-2">
-                      <!-- Vote Buttons -->
-                      <div>
-                        <VoteButtonHorizontal 
-                          :content="post"
-                          size="medium"
-                          :compact="true"
-                          @vote="vote"
-                        />
-                      </div>
-                      <!-- Comments -->
-                      <Link
-                        :href="route('posts.show', post.id)"
-                        class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700"
-                        @click.stop
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        <span class="font-medium text-xs">{{ post.comments_count || 0 }} {{ post.comments_count === 1 ? 'comment' : 'comments' }}</span>
-                      </Link>
-
-                      <!-- Views Count -->
-                      <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-50 text-gray-600">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        <span class="font-medium text-xs">{{ post.views_count || 0 }} {{ (post.views_count || 0) === 1 ? 'view' : 'views' }}</span>
-                      </div>
-                      
-                      <!-- Share Button -->
-                      <button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                        </svg>
-                        <span class="font-medium text-xs">Share</span>
-                      </button>
-                      
-                      <!-- Save Button -->
-                      <button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                        </svg>
-                        <span class="font-medium text-xs">Save</span>
-                      </button>
-                      
-                      <!-- Award/Gift -->
-                      <button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700">
-                        <span class="text-sm">🏆</span>
-                        <span class="font-medium text-xs">Award</span>
-                      </button>
-                      
-                      <!-- NSFW Tag -->
-                      <span v-if="post.nsfw" class="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 border border-red-200">
-                        NSFW
-                      </span>
+                    <div class="mt-2">
+                      <PostInteractions 
+                        :post="post" 
+                        @vote="vote" 
+                      />
                     </div>
                     
                   </div>
@@ -825,7 +773,7 @@ onMounted(() => {
               </div>
               
               <!-- Trending Posts -->
-              <div v-else-if="trendingPosts.length > 0" v-for="(post, index) in trendingPosts" :key="'trending-' + post.id" class="px-4 py-3 hover:bg-orange-50 transition-colors duration-200">
+              <div v-else-if="trendingPosts && trendingPosts.length > 0" v-for="(post, index) in trendingPosts" :key="'trending-' + post.id" class="px-4 py-3 hover:bg-orange-50 transition-colors duration-200">
                 <div class="flex items-center space-x-3">
                   <div class="flex-shrink-0">
                     <div class="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
