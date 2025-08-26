@@ -7,8 +7,8 @@ set -e
 
 # Configuration
 APP_NAME="fapp"
-DEPLOY_PATH="/var/www/fapp"
-REPO_URL="https://github.com/your-username/fapp.git"
+DEPLOY_PATH="/home/u636722041/domains/fappify.in"
+REPO_URL="https://github.com/moryapant/piffy.git"
 PHP_FPM_SERVICE="php8.2-fpm"
 WEB_SERVER_SERVICE="nginx"
 
@@ -77,7 +77,15 @@ deploy() {
     
     # Install PHP dependencies
     log "Installing PHP dependencies..."
-    /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
+    
+    # Check platform requirements first
+    log "Checking platform requirements..."
+    if ! /usr/local/bin/composer check-platform-reqs --no-dev; then
+        warning "Platform requirements check failed, proceeding with ignore-platform-reqs"
+        /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+    else
+        /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
+    fi
     
     # Install Node dependencies and build assets
     log "Building frontend assets..."
