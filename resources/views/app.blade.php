@@ -5,9 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title inertia>
-    {{ isset($page['props']['post']) ? $page['props']['post']['title'] . ' - ' . config('app.name', 'Fappify') : config('app.name', 'Fappify') }}
-    </title>
+    <title inertia>{{ config('app.name', 'Fappify') }}</title>
 
     <!-- Open Graph Tags -->
     @if (isset($page['props']['post']))
