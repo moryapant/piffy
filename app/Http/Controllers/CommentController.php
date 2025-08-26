@@ -28,6 +28,22 @@ class CommentController extends Controller
         $comment->post_id = $post->id;
         $comment->save();
 
+        // Record the comment activity in visits table
+        \DB::table('visits')->insert([
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent() ?? 'Unknown',
+            'page_visited' => $request->fullUrl(),
+            'page_title' => "Comment on: " . $post->title,
+            'user_id' => auth()->id(),
+            'activity_type' => 'comment',
+            'model_id' => $comment->id,
+            'model_type' => 'Comment',
+            'activity_data' => json_encode(['comment_id' => $comment->id, 'post_id' => $post->id]),
+            'visited_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
         return back()->with('success', 'Comment added successfully!');
     }
 
@@ -53,6 +69,26 @@ class CommentController extends Controller
         ]);
 
         $comment->save();
+
+        // Record the reply activity in visits table
+        \DB::table('visits')->insert([
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent() ?? 'Unknown',
+            'page_visited' => $request->fullUrl(),
+            'page_title' => "Reply on: " . $post->title,
+            'user_id' => auth()->id(),
+            'activity_type' => 'reply',
+            'model_id' => $comment->id,
+            'model_type' => 'Comment',
+            'activity_data' => json_encode([
+                'comment_id' => $comment->id, 
+                'post_id' => $post->id, 
+                'parent_id' => $validated['parent_id']
+            ]),
+            'visited_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
 
         return back()->with('success', 'Reply added successfully!');
     }

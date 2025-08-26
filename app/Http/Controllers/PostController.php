@@ -6,17 +6,18 @@ use App\Models\Post;
 use App\Models\Subfapp;
 use App\Models\Tag;
 use App\Services\PostSorting;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Foundation\Validation\ValidatesRequests;
+use Inertia\Inertia;
 
 class PostController extends Controller
 {
-    use AuthorizesRequests, ValidatesRequests;
+    use AuthorizesRequests;
+    use ValidatesRequests;
 
     protected $postSorting;
 
@@ -26,14 +27,12 @@ class PostController extends Controller
         $this->middleware('auth')->except(['index', 'show']);
     }
 
-
-
     public function index(Request $request)
     {
         $query = Post::with(['user', 'subfapp', 'images', 'tags'])
             ->withCount('comments')
-            ->when(auth()->check(), function($query) {
-                $query->with(['userVote' => function($query) {
+            ->when(auth()->check(), function ($query) {
+                $query->with(['userVote' => function ($query) {
                     $query->where('user_id', auth()->id());
                 }]);
             });
@@ -47,7 +46,25 @@ class PostController extends Controller
             default => $this->postSorting->hot($query),
         };
 
-        $posts = $query->paginate(20);
+        $posts = $query->paginate(10);
+
+        // Process media URLs and types
+        $posts->through(function ($post) {
+            $post->images = $post->images->map(function ($image) {
+                $path = $image->image_path;
+                $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+                return [
+                    'id' => $image->id,
+                    'image_path' => $path,
+                    'order' => $image->order,
+                    'url' => Storage::url($path),
+                    'type' => strtolower($extension) === 'mp4' ? 'video' : 'image',
+                ];
+            })->values();
+
+            return $post;
+        });
 
         // Get popular communities
         $communities = Subfapp::withCount(['posts', 'users'])
@@ -62,7 +79,7 @@ class PostController extends Controller
                     'icon' => $community->cover_image,
                     'avtaar' => $community->icon,
                     'posts_count' => $community->posts_count,
-                    'member_count' => $community->users_count
+                    'member_count' => $community->users_count,
                 ];
             });
 
@@ -91,9 +108,11 @@ class PostController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'content' => 'nullable|string',
             'subfapp_id' => 'required|exists:subfapps,id',
             'tags' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'mimes:jpeg,webp,png,jpg,gif,mp4|max:10240',
         ]);
 
         // Sanitize HTML content
@@ -109,12 +128,12 @@ class PostController extends Controller
         // Handle tags
         if ($request->tags) {
             $tagNames = collect(explode(',', $request->tags))
-                ->map(fn($tag) => trim($tag))
+                ->map(fn ($tag) => trim($tag))
                 ->filter()
                 ->unique()
                 ->values();
 
-            $tags = $tagNames->map(function($name) {
+            $tags = $tagNames->map(function ($name) {
                 return Tag::firstOrCreate(
                     ['name' => $name],
                     ['slug' => \Str::slug($name)]
@@ -127,9 +146,13 @@ class PostController extends Controller
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
                 $path = $image->store('posts/images', 'public');
+                $extension = strtolower($image->getClientOriginalExtension());
+                $type = $extension === 'mp4' ? 'video' : 'image';
+
                 $post->images()->create([
                     'image_path' => $path,
                     'order' => $index,
+                    'type' => $type,
                 ]);
             }
         }
@@ -142,13 +165,13 @@ class PostController extends Controller
     {
         $post->load(['user', 'subfapp', 'images', 'tags'])
             ->loadCount('comments')
-            ->load(['comments' => function($query) {
+            ->load(['comments' => function ($query) {
                 $query->with('user')->latest();
             }]);
 
         // Only load user vote if authenticated
         if (auth()->check()) {
-            $post->load(['userVote' => function($query) {
+            $post->load(['userVote' => function ($query) {
                 $query->where('user_id', auth()->id());
             }]);
         }
@@ -156,20 +179,20 @@ class PostController extends Controller
         // Track post view
         $this->trackPostView($post, $request);
 
-        // Process post data with image URLs
+        // Process post data with image URLs and types
         $postData = $post->toArray();
-        $postData['images'] = collect($post->images)->map(function($image) {
+        $postData['images'] = collect($post->images)->map(function ($image) {
             return [
                 'id' => $image->id,
                 'image_path' => $image->image_path,
                 'order' => $image->order,
-                'url' => Storage::url($image->image_path)
+                'type' => $image->type ?? 'image',
+                'url' => Storage::url($image->image_path),
             ];
         })->values()->all();
 
-
         return Inertia::render('Post/Show', [
-            'post' => $postData
+            'post' => $postData,
         ]);
     }
 
@@ -184,31 +207,25 @@ class PostController extends Controller
         // Load the post with its relationships
         $post->load(['images', 'subfapp', 'user', 'tags']);
 
-
-
         // Keep the original post data but ensure images are properly formatted
         $postData = $post->toArray();
-        $postData['images'] = $post->images->map(function($image) {
+        $postData['images'] = $post->images->map(function ($image) {
             return [
                 'id' => $image->id,
                 'image_path' => $image->image_path,
-                'url' => Storage::url($image->image_path)
+                'url' => Storage::url($image->image_path),
             ];
         })->values()->all();
 
-
-
         return Inertia::render('Post/Edit', [
             'post' => $postData,
-            'subfapps' => $subfapps
+            'subfapps' => $subfapps,
         ]);
     }
 
     public function update(Request $request, Post $post)
     {
         $this->authorize('update', $post);
-
-
 
         // If no content is provided, keep the existing content
         $content = $request->input('content') ?: $post->content;
@@ -222,7 +239,7 @@ class PostController extends Controller
             'removedImages' => 'nullable|array',
             'removedImages.*' => 'integer|exists:post_images,id',
             'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
+            'images.*' => 'mimes:jpeg,png,webp,jpg,gif,webp,mp4|max:10240',
         ]);
 
         // Update basic post information
@@ -234,7 +251,6 @@ class PostController extends Controller
 
         // Remove selected images
         if ($request->removedImages) {
-
             foreach ($request->removedImages as $imageId) {
                 $image = $post->images()->find($imageId);
                 if ($image) {
@@ -256,9 +272,8 @@ class PostController extends Controller
                         // Create database record
                         $imageModel = $post->images()->create([
                             'image_path' => $path,
-                            'order' => $post->images()->count()
+                            'order' => $post->images()->count(),
                         ]);
-
                     } else {
                     }
                 } catch (\Exception $e) {
@@ -269,28 +284,28 @@ class PostController extends Controller
         }
 
         // Reload post with all relationships
-        $post->load(['user', 'subfapp', 'images' => function($query) {
+        $post->load(['user', 'subfapp', 'images' => function ($query) {
             $query->orderBy('order');
         }, 'tags'])
             ->loadCount('comments')
-            ->load(['comments' => function($query) {
+            ->load(['comments' => function ($query) {
                 $query->with('user')->latest();
             }]);
 
         if (auth()->check()) {
-            $post->load(['userVote' => function($query) {
+            $post->load(['userVote' => function ($query) {
                 $query->where('user_id', auth()->id());
             }]);
         }
 
         // Process post data with image URLs
         $postData = $post->toArray();
-        $postData['images'] = collect($post->images)->map(function($image) {
+        $postData['images'] = collect($post->images)->map(function ($image) {
             return [
                 'id' => $image->id,
                 'image_path' => $image->image_path,
                 'order' => $image->order,
-                'url' => Storage::url($image->image_path)
+                'url' => Storage::url($image->image_path),
             ];
         })->values()->all();
 
@@ -309,7 +324,7 @@ class PostController extends Controller
     }
 
     /**
-     * Track post view and update metrics
+     * Track post view and update metrics.
      */
     protected function trackPostView(Post $post, Request $request): void
     {

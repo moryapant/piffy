@@ -10,6 +10,7 @@ class PostImage extends Model
         'post_id',
         'image_path',
         'order',
+        'type',
     ];
 
     public function post()

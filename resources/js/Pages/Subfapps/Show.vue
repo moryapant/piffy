@@ -6,6 +6,7 @@ import Pagination from "@/Components/Pagination.vue";
 import PostVoteButtons from "@/Components/PostVoteButtons.vue";
 import PostSortTabs from "@/Components/PostSortTabs.vue";
 import { timeAgo } from "@/utils/dateUtils";
+import ImageGallery from "@/Components/ImageGallery.vue";
 
 const coverImageInput = ref(null);
 const avatarImageInput = ref(null);
@@ -72,7 +73,7 @@ const props = defineProps({
   <MainLayout>
     <!-- Banner and Header -->
     <div
-      class="relative overflow-hidden h-96 group"
+      class="overflow-hidden relative h-96 group"
       @mouseenter="isHoveringCover = true"
       @mouseleave="isHoveringCover = false"
     >
@@ -102,7 +103,7 @@ const props = defineProps({
       >
         <button
           @click="() => coverImageInput.click()"
-          class="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-white transition-colors duration-200 rounded-full bg-black/50 hover:bg-black/60"
+          class="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-white rounded-full transition-colors duration-200 bg-black/50 hover:bg-black/60"
         >
           <svg
             class="w-5 h-5"
@@ -155,15 +156,15 @@ const props = defineProps({
           "
         />
       </div>
-      <div class="flex items-end h-full px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <div class="flex items-end px-4 mx-auto max-w-7xl h-full sm:px-6 lg:px-8">
         <div
-          class="flex items-center justify-between w-full px-4 py-4 border-t border-gray-200 rounded-t-lg shadow-sm bg-white/95 backdrop-blur-sm border-x sm:px-6 sm:py-5"
+          class="flex justify-between items-center px-4 py-4 w-full rounded-t-lg border-t border-gray-200 shadow-sm backdrop-blur-sm bg-white/95 border-x sm:px-6 sm:py-5"
         >
           <!-- Left side with avatar and info -->
           <div class="flex items-center space-x-3 sm:space-x-4">
             <!-- Subfapp Icon with improved visibility -->
             <div
-              class="relative flex items-center justify-center w-20 h-20 -mt-12 overflow-hidden bg-white border-2 border-white shadow-md sm:w-32 sm:h-32 sm:rounded-full sm:-mt-16 ring-1 ring-gray-200 group"
+              class="flex overflow-hidden relative justify-center items-center -mt-12 w-20 h-20 bg-white border-2 border-white ring-1 ring-gray-200 shadow-md sm:w-32 sm:h-32 sm:rounded-full sm:-mt-16 group"
               @mouseenter="isHoveringAvatar = true"
               @mouseleave="isHoveringAvatar = false"
             >
@@ -189,7 +190,7 @@ const props = defineProps({
               >
                 <button
                   @click="() => avatarImageInput.click()"
-                  class="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white transition-colors duration-200 rounded-full hover:text-blue-200"
+                  class="flex gap-1 items-center px-2 py-1 text-xs font-medium text-white rounded-full transition-colors duration-200 hover:text-blue-200"
                 >
                   <svg
                     class="w-3.5 h-3.5"
@@ -225,13 +226,13 @@ const props = defineProps({
             </div>
 
             <!-- Desktop Join/Leave Button -->
-            <div class="items-center hidden lg:flex">
+            <div class="hidden items-center lg:flex">
               <Link
                 v-if="!hasJoined"
                 :href="route('subfapp.join', subfapp.id)"
                 method="post"
                 as="button"
-                class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-1.5 rounded-full transition-colors duration-200 text-sm"
+                class="px-4 py-1.5 text-sm font-medium text-white bg-blue-500 rounded-full transition-colors duration-200 hover:bg-blue-600"
               >
                 Join
               </Link>
@@ -240,7 +241,7 @@ const props = defineProps({
                 :href="route('subfapp.leave', subfapp.id)"
                 method="delete"
                 as="button"
-                class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-1.5 rounded-full transition-colors duration-200 text-sm"
+                class="px-4 py-1.5 text-sm font-medium text-white bg-red-500 rounded-full transition-colors duration-200 hover:bg-red-600"
               >
                 Leave
               </Link>
@@ -260,13 +261,13 @@ const props = defineProps({
           <PostSortTabs :current-sort="currentSort" :subfapp-id="subfapp.id" />
           <div
             v-if="!hasJoined"
-            class="p-6 text-center bg-white border border-gray-100 shadow-sm rounded-xl"
+            class="p-6 text-center bg-white rounded-xl border border-gray-100 shadow-sm"
           >
             <p class="text-gray-600">Join this community to see its posts</p>
           </div>
           <div
             v-else-if="posts.data.length === 0"
-            class="p-6 text-center bg-white border border-gray-100 shadow-sm rounded-xl"
+            class="p-6 text-center bg-white rounded-xl border border-gray-100 shadow-sm"
           >
             <p class="text-gray-600">No posts yet</p>
           </div>
@@ -274,24 +275,24 @@ const props = defineProps({
             v-else
             v-for="post in posts.data"
             :key="post.id"
-            class="overflow-hidden transition-all duration-200 bg-white border-gray-100 shadow-sm sm:rounded-xl border-y sm:border hover:border-blue-200 hover:shadow-md group"
+            class="overflow-hidden bg-white border-gray-100 shadow-sm transition-all duration-200 sm:rounded-xl border-y sm:border hover:border-blue-200 hover:shadow-md group"
           >
             <div class="p-3 sm:p-6">
               <!-- Post Header -->
               <div
                 class="flex flex-col mb-4 sm:flex-row sm:justify-between sm:items-center"
               >
-                <div class="flex items-start gap-3 sm:items-center sm:gap-4">
+                <div class="flex gap-3 items-start sm:items-center sm:gap-4">
                   <!-- User Avatar -->
                   <div
-                    class="flex items-center justify-center w-8 h-8 overflow-hidden bg-gray-100 rounded-full ring-2 ring-blue-100"
+                    class="flex overflow-hidden justify-center items-center w-8 h-8 bg-gray-100 rounded-full ring-2 ring-blue-100"
                   >
                     <span class="text-sm font-medium text-gray-600">{{
                       post.user.name[0].toUpperCase()
                     }}</span>
                   </div>
                   <!-- User Info & Post Meta -->
-                  <div class="flex items-center gap-1.5">
+                  <div class="flex gap-1.5 items-center">
                     <span class="text-sm font-medium text-gray-900">
                       u/{{ post.user.name }}
                     </span>
@@ -312,7 +313,7 @@ const props = defineProps({
                     {{ post.title }}
                   </h2>
                   <div
-                    class="mt-2 text-sm leading-relaxed prose-sm prose text-gray-600 line-clamp-3 max-w-none"
+                    class="mt-2 max-w-none text-sm leading-relaxed text-gray-600 prose-sm prose line-clamp-3"
                     v-html="post.content"
                   ></div>
                 </Link>
@@ -321,48 +322,15 @@ const props = defineProps({
                   <span
                     v-for="tag in post.tags"
                     :key="tag.id"
-                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                    class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-full transition-colors hover:bg-blue-100"
                   >
                     #{{ tag.name }}
                   </span>
                 </div>
 
                 <!-- Image Gallery -->
-                <div
-                  :class="[
-                    'mt-4',
-                    post.images.length === 1
-                      ? 'flex justify-center'
-                      : 'grid grid-cols-2 gap-2',
-                  ]"
-                  v-if="post.images?.length"
-                >
-                  <Link
-                    v-for="(image, index) in post.images.slice(0, 4)"
-                    :key="image.id"
-                    :href="route('posts.show', post.id)"
-                    :class="[
-                      'relative overflow-hidden rounded-lg group cursor-pointer',
-                      post.images.length === 1
-                        ? 'w-2/3 aspect-video'
-                        : 'aspect-square',
-                    ]"
-                    @click.prevent="openImage(image)"
-                  >
-                    <img
-                      :src="`/storage/${image.image_path}`"
-                      :alt="`Post image ${image.id}`"
-                      class="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
-                      loading="lazy"
-                    />
-                    <!-- More Images Indicator -->
-                    <div
-                      v-if="index === 3 && post.images.length > 4"
-                      class="absolute inset-0 flex items-center justify-center font-medium text-white bg-black bg-opacity-50"
-                    >
-                      <span>+{{ post.images.length - 4 }} more</span>
-                    </div>
-                  </Link>
+                <div v-if="post.images?.length" class="-mx-3 mt-4 sm:-mx-6">
+                  <ImageGallery :images="post.images" />
                 </div>
               </div>
 
@@ -400,26 +368,6 @@ const props = defineProps({
                     }}</span
                   >
                 </Link>
-
-                <!-- Share -->
-                <button
-                  class="flex items-center space-x-2 text-gray-500 transition-colors duration-200 hover:text-blue-600"
-                >
-                  <svg
-                    class="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                    />
-                  </svg>
-                  <span class="text-sm">Share</span>
-                </button>
               </div>
             </div>
           </div>
@@ -431,7 +379,7 @@ const props = defineProps({
         </div>
 
         <!-- Right Column: Community Info -->
-        <div class="order-1 w-full space-y-4 lg:w-80 lg:order-2">
+        <div class="order-1 space-y-4 w-full lg:w-80 lg:order-2">
           <!-- Mobile Join Button -->
           <div class="block lg:hidden">
             <div
@@ -443,7 +391,7 @@ const props = defineProps({
                   :href="route('subfapp.join', subfapp.id)"
                   method="post"
                   as="button"
-                  class="w-full px-4 py-2 font-medium text-white transition-colors duration-200 bg-blue-500 rounded-full hover:bg-blue-600"
+                  class="px-4 py-2 w-full font-medium text-white bg-blue-500 rounded-full transition-colors duration-200 hover:bg-blue-600"
                 >
                   Join Community
                 </Link>
@@ -455,7 +403,7 @@ const props = defineProps({
                     :href="route('subfapp.leave', subfapp.id)"
                     method="delete"
                     as="button"
-                    class="w-full px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-red-500 rounded-full hover:bg-red-600"
+                    class="px-4 py-2 w-full text-sm font-medium text-white bg-red-500 rounded-full transition-colors duration-200 hover:bg-red-600"
                   >
                     Leave Community
                   </Link>
@@ -469,7 +417,7 @@ const props = defineProps({
 
           <!-- About Community (hidden on mobile) -->
           <div
-            class="sticky hidden overflow-hidden bg-white border border-gray-100 shadow-sm lg:block sm:rounded-xl top-4"
+            class="hidden overflow-hidden sticky top-4 bg-white border border-gray-100 shadow-sm lg:block sm:rounded-xl"
           >
             <div class="px-4 py-3 bg-blue-600 border-b border-blue-500">
               <h2 class="text-base font-semibold text-white">
@@ -482,14 +430,14 @@ const props = defineProps({
               <!-- Stats -->
               <div class="flex gap-4">
                 <!-- Members -->
-                <div class="flex-1 p-3 text-center rounded-lg bg-blue-50">
+                <div class="flex-1 p-3 text-center bg-blue-50 rounded-lg">
                   <div class="text-lg font-medium text-blue-900">
                     {{ membersCount }}
                   </div>
                   <div class="text-blue-600">Members</div>
                 </div>
                 <!-- Posts -->
-                <div class="flex-1 p-3 text-center rounded-lg bg-blue-50">
+                <div class="flex-1 p-3 text-center bg-blue-50 rounded-lg">
                   <div class="text-lg font-medium text-blue-900">
                     {{ posts.total || 0 }}
                   </div>
@@ -499,7 +447,7 @@ const props = defineProps({
 
               <!-- Created Info -->
               <div class="mt-4 space-y-2">
-                <div class="flex items-center gap-2 text-sm text-gray-500">
+                <div class="flex gap-2 items-center text-sm text-gray-500">
                   <svg
                     class="w-4 h-4"
                     fill="none"
@@ -520,7 +468,7 @@ const props = defineProps({
                     }}</span
                   >
                 </div>
-                <div class="flex items-center gap-2 text-sm text-gray-500">
+                <div class="flex gap-2 items-center text-sm text-gray-500">
                   <svg
                     class="w-4 h-4"
                     fill="none"
@@ -559,7 +507,7 @@ const props = defineProps({
     <!-- Full Screen Modal -->
     <div
       v-if="selectedImage"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-75"
+      class="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black bg-opacity-75"
       @click="closeImage"
     >
       <img
@@ -570,3 +518,11 @@ const props = defineProps({
     </div>
   </MainLayout>
 </template>
+
+const shareOnFacebook = () => {
+  if (typeof window !== 'undefined') {
+    const subfappUrl = window.location.href;
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(subfappUrl)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  }
+};

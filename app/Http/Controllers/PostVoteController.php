@@ -36,6 +36,22 @@ class PostVoteController extends Controller
             'downvotes' => $downvotes,
         ]);
 
+        // Record the vote action in visits table for activity tracking
+        \DB::table('visits')->insert([
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent() ?? 'Unknown',
+            'page_visited' => $request->fullUrl(),
+            'page_title' => "Post Vote: " . $post->title,
+            'user_id' => auth()->id(),
+            'activity_type' => 'post_vote',
+            'model_id' => $post->id,
+            'model_type' => 'Post',
+            'activity_data' => json_encode(['vote_type' => $voteType]),
+            'visited_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
         return back();
     }
 }

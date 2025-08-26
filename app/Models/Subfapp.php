@@ -30,6 +30,16 @@ class Subfapp extends Model
         return $this->hasMany(Post::class);
     }
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function($community) {
+            // Delete all posts in the community
+            $community->posts()->delete();
+        });
+    }
+
     public function users()
     {
         return $this->belongsToMany(User::class, 'user_subfapp');

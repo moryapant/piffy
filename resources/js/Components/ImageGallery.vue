@@ -15,9 +15,27 @@ const getImageUrl = (image) => {
   return `/storage/${image.image_path}`;
 };
 
+// Compute aspect ratio for images
+const computeAspectRatio = (image) => {
+  if (image.width && image.height) {
+    return image.width / image.height;
+  }
+  return null;
+};
+
+// Add aspect ratio to images
+const processedImages = computed(() => {
+  return props.images.map((image) => ({
+    ...image,
+    aspect_ratio: computeAspectRatio(image),
+  }));
+});
+
 const currentImageIndex = computed(() => {
   if (!selectedImage.value) return -1;
-  return props.images.findIndex((img) => img.id === selectedImage.value.id);
+  return processedImages.value.findIndex(
+    (img) => img.id === selectedImage.value.id
+  );
 });
 
 const openImage = (image) => {
@@ -35,13 +53,13 @@ const closeImage = () => {
 
 const previousImage = () => {
   if (currentImageIndex.value > 0) {
-    selectedImage.value = props.images[currentImageIndex.value - 1];
+    selectedImage.value = processedImages.value[currentImageIndex.value - 1];
   }
 };
 
 const nextImage = () => {
-  if (currentImageIndex.value < props.images.length - 1) {
-    selectedImage.value = props.images[currentImageIndex.value + 1];
+  if (currentImageIndex.value < processedImages.value.length - 1) {
+    selectedImage.value = processedImages.value[currentImageIndex.value + 1];
   }
 };
 
@@ -73,42 +91,72 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <!-- Image Gallery Grid -->
+    <!-- Media Gallery Grid -->
     <div
       v-if="images?.length"
-      class="grid gap-2 sm:gap-4"
+      class="grid gap-1 overflow-hidden bg-black rounded-xl"
       :class="{
-        'grid-cols-1 max-w-2xl mx-auto': images.length === 1,
-        'grid-cols-2': images.length === 2,
-        'grid-cols-2 grid-rows-2': images.length >= 3,
+        'grid-cols-1': images.length === 1,
+        'grid-cols-2': images.length >= 2,
       }"
     >
       <div
         v-for="(image, index) in images.slice(0, Math.min(4, images.length))"
         :key="image.id"
-        class="relative aspect-square group cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.02]"
+        class="relative group cursor-pointer overflow-hidden bg-black flex items-center justify-center"
+        :class="{
+          'h-[500px]': images.length === 1,
+          'h-[250px]': images.length >= 2,
+        }"
         @click="openImage(image)"
       >
-        <img
-          :src="getImageUrl(image)"
-          :alt="`Post image ${image.id}`"
-          class="object-cover w-full h-full"
-          loading="lazy"
-          @error="
-            (e) => console.error('Image load error:', getImageUrl(image), e)
-          "
-          @load="() => console.log('Image loaded:', getImageUrl(image))"
-        />
+        <div class="relative flex items-center justify-center w-full h-full bg-black">
+          <template v-if="image.type === 'video'">
+            <video
+              :src="getImageUrl(image)"
+              :class="[
+                'transition-all duration-500 group-hover:scale-105 group-hover:brightness-105',
+                images.length === 1 ? 'max-h-[500px] w-auto object-contain' : 'w-full h-full object-cover'
+              ]"
+              controls
+              autoplay
+              loop
+              muted
+              playsinline
+            />
+          </template>
+          <template v-else>
+            <img
+              :src="getImageUrl(image)"
+              :alt="`Post image ${image.id}`"
+              :class="[
+                'transition-all duration-500 group-hover:scale-105 group-hover:brightness-105',
+                images.length === 1 ? 'max-h-[500px] w-auto object-contain' : 'w-full h-full object-cover'
+              ]"
+              loading="lazy"
+            />
+          </template>
+        </div>
+
+        <!-- Gradient Overlay -->
+        <div
+          class="absolute inset-0 transition-opacity duration-300 opacity-0 bg-gradient-to-t from-black/20 to-transparent group-hover:opacity-100"
+        ></div>
+
         <!-- More Images Indicator -->
         <div
           v-if="index === 3 && images.length > 4"
-          class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+          class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px] transition-opacity duration-300"
         >
-          <div class="text-center text-white">
-            <span class="block text-2xl font-bold"
+          <div
+            class="text-center text-white transition-transform duration-300 transform group-hover:scale-110"
+          >
+            <span class="block text-3xl font-bold"
               >+{{ images.length - 4 }}</span
             >
-            <span class="text-sm font-medium text-white/90">more photos</span>
+            <span class="text-sm font-medium text-white/90">
+              more {{ images.some(img => img.type === 'video') ? 'media' : 'photos' }}
+            </span>
           </div>
         </div>
       </div>
@@ -126,7 +174,7 @@ onUnmounted(() => {
     >
       <!-- Close Button -->
       <button
-        class="absolute text-white top-4 right-4 hover:text-gray-300 focus:outline-none"
+        class="absolute text-white transition-colors duration-200 top-6 right-6 hover:text-gray-300 focus:outline-none"
         @click="closeImage"
       >
         <svg
@@ -144,101 +192,76 @@ onUnmounted(() => {
         </svg>
       </button>
 
-      <!-- Previous Button -->
+      <!-- Previous Arrow (Mobile & Desktop) -->
       <button
         v-if="currentImageIndex > 0"
-        class="absolute p-2 text-white transition-transform duration-200 -translate-y-1/2 rounded-full left-2 sm:left-4 top-1/2 hover:text-gray-300 focus:outline-none hover:scale-110 bg-black/30 sm:p-3 backdrop-blur-sm"
+        class="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
         @click.stop="previousImage"
       >
         <svg
-          class="w-6 h-6 sm:w-10 sm:h-10"
+          class="w-5 h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          stroke-width="2.5"
         >
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="2"
             d="M15 19l-7-7 7-7"
           />
         </svg>
       </button>
 
-      <!-- Next Button -->
+      <!-- Next Arrow (Mobile & Desktop) -->
       <button
         v-if="currentImageIndex < images.length - 1"
-        class="absolute p-2 text-white transition-transform duration-200 -translate-y-1/2 rounded-full right-2 sm:right-4 top-1/2 hover:text-gray-300 focus:outline-none hover:scale-110 bg-black/30 sm:p-3 backdrop-blur-sm"
+        class="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
         @click.stop="nextImage"
       >
         <svg
-          class="w-6 h-6 sm:w-10 sm:h-10"
+          class="w-5 h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          stroke-width="2.5"
         >
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="2"
             d="M9 5l7 7-7 7"
           />
         </svg>
       </button>
 
-      <!-- Current Image -->
-      <div class="relative max-h-[90vh] max-w-[90vw]">
-        <!-- Left Arrow Indicator (Mobile) -->
-        <button
-          v-if="currentImageIndex > 0"
-          class="absolute inset-y-0 left-0 flex items-center w-16 bg-gradient-to-r from-black/20 to-transparent sm:hidden"
-          @click.stop="previousImage"
-        >
-          <svg
-            class="w-8 h-8 ml-2 text-white/80"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-
-        <!-- Right Arrow Indicator (Mobile) -->
-        <button
-          v-if="currentImageIndex < images.length - 1"
-          class="absolute inset-y-0 right-0 flex items-center justify-end w-16 bg-gradient-to-l from-black/20 to-transparent sm:hidden"
-          @click.stop="nextImage"
-        >
-          <svg
-            class="w-8 h-8 mr-2 text-white/80"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-
-        <img
-          :src="`/storage/${selectedImage.image_path}`"
-          :alt="`Post image ${selectedImage.id}`"
-          class="object-contain max-h-[90vh] max-w-[90vw] select-none"
-          @click.stop
-        />
+      <!-- Image Container -->
+      <div
+        class="relative max-h-[90vh] max-w-[90vw] flex items-center justify-center select-none bg-black rounded-lg"
+      >
+        <template v-if="selectedImage.type === 'video'">
+          <video
+            :src="getImageUrl(selectedImage)"
+            class="max-h-[90vh] max-w-[90vw] object-contain select-none"
+            controls
+            autoplay
+            loop
+            muted
+            playsinline
+            @click.stop
+          />
+        </template>
+        <template v-else>
+          <img
+            :src="getImageUrl(selectedImage)"
+            :alt="`Post image ${selectedImage.id}`"
+            class="max-h-[90vh] max-w-[90vw] object-contain select-none"
+            @click.stop
+          />
+        </template>
         <!-- Image Counter -->
         <div
-          class="absolute px-4 py-2 text-sm font-medium text-white -translate-x-1/2 rounded-full bottom-4 left-1/2 bg-black/70"
+          v-if="images.length > 1"
+          class="absolute px-4 py-2 text-sm font-medium text-white -translate-x-1/2 rounded-full bottom-4 left-1/2 bg-black/50 backdrop-blur-sm"
         >
           {{ currentImageIndex + 1 }} / {{ images.length }}
         </div>

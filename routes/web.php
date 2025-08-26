@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostVoteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubfappController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PostController::class, 'index'])->name('home');
@@ -28,7 +30,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Post routes
-Route::resource('posts', PostController::class);
+Route::resource('posts', PostController::class)->middleware(\App\Http\Middleware\SimpleVisitMiddleware::class);
 Route::post('/posts/{post}/vote', [PostVoteController::class, 'vote'])->name('posts.vote');
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('posts.comments.store');
 Route::post('/posts/{post}/comments/reply', [CommentController::class, 'reply'])->name('posts.comments.reply');
@@ -39,4 +41,31 @@ Route::get('/test-storage', function () {
     return response()->file(storage_path('app/public/subfapps/covers/UfN0YfPp2frwzZYZ8Zwrm3rDmnmW70Earz36oGSx.jpg'));
 });
 
+// User routes
+Route::get('/users/{user}', [UserController::class, 'profile'])->name('users.profile');
+
+// Test route with simple middleware
+Route::get('/test-simple', function () {
+    return 'Testing the simple middleware. Check the DB for a new record.';
+})->middleware(\App\Http\Middleware\SimpleVisitMiddleware::class);
+
+// Test route with class-based middleware
+Route::get('/test-direct', function () {
+    return 'Testing direct middleware reference. Check the DB for a new record.';
+})->middleware(\App\Http\Middleware\SimpleVisitMiddleware::class);
+
+// Admin routes
+Route::middleware(['auth', \App\Http\Middleware\AdminMiddleware::class])->prefix('admin')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('admin.index');
+    Route::delete('/bulk-delete', [AdminController::class, 'bulkDelete'])->name('admin.bulk-delete');
+    Route::delete('/posts/{post}', [AdminController::class, 'deletePost'])->name('admin.posts.delete');
+    Route::patch('/comments/{comment}', [AdminController::class, 'updateComment'])->name('admin.comments.update');
+    Route::delete('/comments/{comment}', [AdminController::class, 'deleteComment'])->name('admin.comments.delete');
+    Route::patch('/users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+    Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    Route::patch('/communities/{community}', [AdminController::class, 'updateCommunity'])->name('admin.communities.update');
+    Route::delete('/communities/{community}', [AdminController::class, 'deleteCommunity'])->name('admin.communities.delete');
+});
+
 require __DIR__.'/auth.php';
+
