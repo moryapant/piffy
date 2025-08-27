@@ -489,7 +489,7 @@ onMounted(() => {
           </div>
 
           <!-- Reddit-style Quick Stats Cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="hidden sm:grid sm:grid-cols-4 gap-4">
             <!-- Total Posts -->
             <div class="bg-white rounded-xl border-l-4 border-orange-500 shadow-lg p-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
               <div class="flex items-center">
@@ -498,7 +498,7 @@ onMounted(() => {
                 </div>
                 <div>
                   <div class="text-xl font-black text-gray-900">{{ stats.total_posts || '0' }}</div>
-                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider">Posts</div>
+                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider hidden sm:block">Posts</div>
                 </div>
               </div>
             </div>
@@ -511,7 +511,7 @@ onMounted(() => {
                 </div>
                 <div>
                   <div class="text-xl font-black text-gray-900">{{ stats.total_communities || '0' }}</div>
-                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider">Communities</div>
+                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider hidden sm:block">Communities</div>
                 </div>
               </div>
             </div>
@@ -524,7 +524,7 @@ onMounted(() => {
                 </div>
                 <div>
                   <div class="text-xl font-black text-gray-900">{{ stats.active_users || '0' }}</div>
-                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider">Users</div>
+                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider hidden sm:block">Users</div>
                 </div>
               </div>
             </div>
@@ -537,7 +537,7 @@ onMounted(() => {
                 </div>
                 <div>
                   <div class="text-xl font-black text-gray-900">{{ stats.online_users || '1' }}</div>
-                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider">Online</div>
+                  <div class="text-xs text-gray-600 font-semibold uppercase tracking-wider hidden sm:block">Online</div>
                 </div>
               </div>
             </div>
@@ -919,7 +919,7 @@ onMounted(() => {
         <template v-else>
           <img
             :src="`/storage/${selectedImage.image_path}`"
-            :alt="`Post image ${selectedImage.id}`"
+            alt=""
             class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
             @click.stop
           />

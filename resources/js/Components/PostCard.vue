@@ -49,7 +49,7 @@
           >
             <img
               :src="image.url"
-              :alt="post.title"
+              alt=""
               class="object-cover absolute inset-0 w-full h-full"
             />
           </div>

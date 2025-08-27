@@ -128,12 +128,13 @@ onUnmounted(() => {
           <template v-else>
             <img
               :src="getImageUrl(image)"
-              :alt="`Post image ${image.id}`"
+              alt=""
               :class="[
                 'transition-all duration-500 group-hover:scale-105 group-hover:brightness-105',
                 images.length === 1 ? 'max-h-[500px] w-auto object-contain' : 'w-full h-full object-cover'
               ]"
               loading="lazy"
+              style="font-size: 0; line-height: 0;"
             />
           </template>
         </div>
@@ -253,7 +254,7 @@ onUnmounted(() => {
         <template v-else>
           <img
             :src="getImageUrl(selectedImage)"
-            :alt="`Post image ${selectedImage.id}`"
+            alt=""
             class="max-h-[90vh] max-w-[90vw] object-contain select-none"
             @click.stop
           />
