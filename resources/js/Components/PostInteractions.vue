@@ -126,13 +126,13 @@ const hasDownvoted = computed(() => userVote.value === -1);
     <!-- Views Count -->
     <div class="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 lg:px-4 lg:py-2 rounded-full bg-gray-50 text-gray-600 select-none">
       <!-- Eye Icon -->
-      <svg class="w-5 h-5 md:w-6 md:h-6 lg:w-6 lg:h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg class="w-6 h-6 md:w-7 md:h-7 lg:w-7 lg:h-7 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
       </svg>
       
       <!-- Views Count -->
-      <span class="font-medium whitespace-nowrap text-xs md:text-sm lg:text-sm">
+      <span class="font-medium whitespace-nowrap text-sm md:text-base lg:text-base">
         {{ formatCount(post.views_count || 0) }}
         <span class="hidden md:inline">
           {{ (post.views_count || 0) === 1 ? ' view' : ' views' }}
