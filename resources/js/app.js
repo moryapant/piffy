@@ -8,8 +8,17 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+// Debug logging
+console.log('Debug - VITE_APP_NAME:', import.meta.env.VITE_APP_NAME);
+console.log('Debug - Final appName:', appName);
+console.log('Debug - All Vite env vars:', import.meta.env);
+
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => {
+        const finalTitle = `${title} - ${appName}`;
+        console.log('Debug - Title function called with:', { title, appName, finalTitle });
+        return finalTitle;
+    },
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,
