@@ -82,6 +82,16 @@ class PostController extends Controller
         if (!empty($postIds)) {
             // Only increment views_count once per unique IP per post per hour to avoid spam
             $this->trackBulkPostViews($postIds, $request);
+            
+            // Refresh views_count in the loaded posts collection after incrementing
+            $updatedViewsCounts = \DB::table('posts')
+                ->whereIn('id', $postIds)
+                ->pluck('views_count', 'id');
+                
+            $posts->through(function ($post) use ($updatedViewsCounts) {
+                $post->views_count = $updatedViewsCounts[$post->id] ?? $post->views_count;
+                return $post;
+            });
         }
 
         // Process media URLs and types
