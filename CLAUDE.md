@@ -93,6 +93,12 @@ This is a Laravel 11 application with an Inertia.js + Vue.js frontend, implement
 - Run tests: `php artisan test` or `vendor/bin/phpunit`
 - Run specific test: `php artisan test --filter=TestName`
 
+### Performance & Analytics
+- **Visit Throttling**: Home page post views throttled to once per IP per post per hour
+- **Bulk Operations**: Admin panel supports bulk deletion and export functionality
+- **Image/Video Support**: Automatic type detection for uploads (image vs video)
+- **Post Metrics**: Real-time tracking of views, votes, comments, and trending scores
+
 ### Key Routes & Controllers
 - Home: `/` → `PostController@index` (main feed)
 - Posts: Resource routes with voting, comments, and visit tracking
@@ -102,12 +108,14 @@ This is a Laravel 11 application with an Inertia.js + Vue.js frontend, implement
 - Visit tracking: Middleware on specific routes for analytics
 
 ### Important Implementation Details
-- **Visit Tracking**: `SimpleVisitMiddleware` records page visits and user activities
+- **Visit Tracking**: Dual tracking system using `SimpleVisitMiddleware` (general visits) + `PostController::trackPostView()` (post-specific views)
 - **Authentication**: Google OAuth + Laravel Breeze, admin users via middleware
 - **File Uploads**: Uses public disk storage for avatars, covers, and post media
-- **Voting System**: Separate `PostVote` model with score calculations
+- **Voting System**: Separate `PostVote` model with score calculations and `PostVoteObserver` for automatic score updates
 - **Comments**: Threaded comment system with reply functionality
-- **Hot Algorithm**: Post scoring for feed ranking based on votes and time
+- **Hot Algorithm**: Post scoring for feed ranking based on votes and time with trending status updates
+- **Community Privacy**: Four visibility types (public, restricted, private, hidden) with dynamic access control
+- **Content Sanitization**: HTML content sanitized using HTMLPurifier with allowed tags configuration
 
 ===
 

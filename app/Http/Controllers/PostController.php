@@ -76,6 +76,13 @@ class PostController extends Controller
         };
 
         $posts = $query->paginate(10);
+        
+        // Track home page views for each post displayed (bulk update for performance)
+        $postIds = $posts->pluck('id')->toArray();
+        if (!empty($postIds)) {
+            // Only increment views_count once per unique IP per post per hour to avoid spam
+            $this->trackBulkPostViews($postIds, $request);
+        }
 
         // Process media URLs and types
         $posts->through(function ($post) {
@@ -478,6 +485,47 @@ class PostController extends Controller
 
         // Update trending status
         app(PostSorting::class)->updateTrendingStatus($post);
+    }
+
+    /**
+     * Track bulk post views for home page display (with throttling).
+     */
+    protected function trackBulkPostViews(array $postIds, Request $request): void
+    {
+        if (empty($postIds)) {
+            return;
+        }
+
+        $ipAddress = $request->ip();
+        $userId = auth()->id();
+        $userAgent = $request->userAgent();
+        $hourlyThreshold = now()->subHour();
+
+        foreach ($postIds as $postId) {
+            // Check if this IP/user has already viewed this post in the last hour
+            $recentView = \DB::table('post_views')
+                ->where('post_id', $postId)
+                ->where('ip_address', $ipAddress)
+                ->where('created_at', '>=', $hourlyThreshold)
+                ->exists();
+
+            if (!$recentView) {
+                // Create view record
+                \DB::table('post_views')->insert([
+                    'post_id' => $postId,
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
+                    'user_id' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Increment views count
+                \DB::table('posts')
+                    ->where('id', $postId)
+                    ->increment('views_count');
+            }
+        }
     }
 
     /**
