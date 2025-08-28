@@ -112,6 +112,10 @@ deploy() {
     # Remove git directory to save space
     rm -rf .git
     
+    # Link environment file early so it's available during asset building
+    log "Linking environment file..."
+    ln -nfs "$DEPLOY_PATH/shared/.env" "$RELEASE_PATH/.env"
+    
     # Install PHP dependencies
     log "Installing PHP dependencies..."
     if command -v composer &> /dev/null; then
@@ -144,8 +148,7 @@ deploy() {
     # Create symlinks to shared directories
     log "Creating symlinks..."
     
-    # Link environment file
-    ln -nfs "$DEPLOY_PATH/shared/.env" "$RELEASE_PATH/.env"
+    # Environment file already linked earlier for asset building
     
     # Remove default storage and bootstrap/cache directories
     rm -rf "$RELEASE_PATH/storage"
