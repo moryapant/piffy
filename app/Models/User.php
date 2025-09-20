@@ -69,4 +69,32 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Subfapp::class, 'user_subfapp');
     }
+
+    // Query scopes for better performance
+    public function scopeWithPostStats($query)
+    {
+        return $query->withCount(['posts', 'comments', 'votes']);
+    }
+
+    public function scopeActive($query, int $days = 30)
+    {
+        return $query->whereHas('posts', function ($postQuery) use ($days) {
+            $postQuery->where('created_at', '>=', now()->subDays($days));
+        })->orWhereHas('comments', function ($commentQuery) use ($days) {
+            $commentQuery->where('created_at', '>=', now()->subDays($days));
+        });
+    }
+
+    public function scopeTopContributors($query, int $days = 30, int $limit = 10)
+    {
+        return $query->withPostStats()
+            ->active($days)
+            ->orderBy('posts_count', 'desc')
+            ->limit($limit);
+    }
+
+    public function scopeAdmins($query)
+    {
+        return $query->where('is_admin', true);
+    }
 }

@@ -108,4 +108,61 @@ class Subfapp extends Model
 
         return $this->users()->where('users.id', $user->id)->exists();
     }
+
+    // Query scopes for better performance
+    public function scopeVisibleToUser($query, ?User $user = null)
+    {
+        if ($user) {
+            return $query->where(function ($q) use ($user) {
+                $q->where('type', '!=', 'hidden')
+                    ->orWhere('created_by', $user->id)
+                    ->orWhereHas('users', function ($userQuery) use ($user) {
+                        $userQuery->where('users.id', $user->id);
+                    });
+
+                if ($user->is_admin) {
+                    $q->orWhere('type', 'hidden');
+                }
+            });
+        } else {
+            return $query->whereIn('type', ['public', 'restricted']);
+        }
+    }
+
+    public function scopePublicAndRestricted($query)
+    {
+        return $query->whereIn('type', ['public', 'restricted']);
+    }
+
+    public function scopeWithCounts($query)
+    {
+        return $query->withCount(['posts', 'users']);
+    }
+
+    public function scopePopular($query, int $limit = 10)
+    {
+        return $query->withCounts()
+            ->orderBy('posts_count', 'desc')
+            ->limit($limit);
+    }
+
+    public function scopeByType($query, string $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    public function scopeCreatedBy($query, int $userId)
+    {
+        return $query->where('created_by', $userId);
+    }
+
+    public function scopeWithUserMembership($query, ?User $user = null)
+    {
+        if ($user) {
+            return $query->with(['users' => function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            }]);
+        }
+        return $query;
+    }
 }

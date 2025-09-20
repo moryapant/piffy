@@ -71,8 +71,58 @@ class Post extends Model
         return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
-    public function userVote()
+    public function userVote(?int $userId = null)
     {
-        return $this->hasOne(PostVote::class)->where('user_id', auth()->id());
+        return $this->hasOne(PostVote::class)
+            ->where('user_id', $userId ?? auth()->id());
+    }
+
+    // Query scopes for better performance
+    public function scopeWithUserData($query, ?User $user = null)
+    {
+        return $query->with(['user', 'subfapp', 'images', 'tags'])
+            ->withCount('comments')
+            ->when($user, function ($q) use ($user) {
+                $q->with(['votes' => function ($voteQuery) use ($user) {
+                    $voteQuery->where('user_id', $user->id);
+                }]);
+            });
+    }
+
+    public function scopeVisibleToUser($query, ?User $user = null)
+    {
+        return $query->whereHas('subfapp', function ($subfappQuery) use ($user) {
+            if ($user) {
+                $subfappQuery->where(function ($q) use ($user) {
+                    $q->whereIn('type', ['public', 'restricted'])
+                      ->orWhereHas('users', function ($userQuery) use ($user) {
+                          $userQuery->where('users.id', $user->id);
+                      })
+                      ->orWhere('created_by', $user->id);
+                    
+                    if ($user->is_admin) {
+                        $q->orWhereIn('type', ['private', 'hidden']);
+                    }
+                });
+            } else {
+                $subfappQuery->where('type', 'public');
+            }
+        });
+    }
+
+    public function scopeForHomeFeed($query, ?User $user = null, string $sort = 'hot')
+    {
+        $query = $query->withUserData($user)
+            ->visibleToUser($user);
+
+        return match ($sort) {
+            'new' => $query->latest('created_at'),
+            'top' => $query->where('created_at', '>=', now()->subHours(6))
+                          ->orderBy('score', 'desc'),
+            'rising' => $query->where('created_at', '>=', now()->subHours(2))
+                             ->where('score', '>', 0)
+                             ->orderBy('score', 'desc'),
+            default => $query->orderBy('hot_score', 'desc'),
+        };
     }
 }

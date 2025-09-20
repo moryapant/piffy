@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subfapp;
+use App\Services\CacheService;
 use App\Services\VisitService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -15,8 +16,11 @@ class SubfappController extends Controller
 {
     use AuthorizesRequests, ValidatesRequests;
 
-    public function __construct()
+    protected $cacheService;
+
+    public function __construct(CacheService $cacheService)
     {
+        $this->cacheService = $cacheService;
         $this->middleware('auth')->except(['index', 'show']);
     }
 
@@ -78,33 +82,11 @@ class SubfappController extends Controller
     {
         $user = auth()->user();
 
-        $query = Subfapp::withCount(['posts', 'users'])
-            ->with(['creator']);
-
-        // If user is authenticated, eager load their memberships to avoid N+1 queries
-        if ($user) {
-            $query->with(['users' => function ($q) use ($user) {
-                $q->where('users.id', $user->id);
-            }]);
-        }
-
-        // Filter out hidden communities unless user is member/creator/admin
-        if ($user) {
-            $query->where(function ($q) use ($user) {
-                $q->where('type', '!=', 'hidden')
-                    ->orWhere('created_by', $user->id)
-                    ->orWhereHas('users', function ($userQuery) use ($user) {
-                        $userQuery->where('users.id', $user->id);
-                    });
-
-                if ($user->is_admin) {
-                    $q->orWhere('type', 'hidden');
-                }
-            });
-        } else {
-            // Non-authenticated users can only see public and restricted communities
-            $query->whereIn('type', ['public', 'restricted']);
-        }
+        // Use optimized query scopes
+        $query = Subfapp::withCounts()
+            ->with(['creator'])
+            ->visibleToUser($user)
+            ->withUserMembership($user);
 
         $subfapps = $query->orderBy('member_count', 'desc')
             ->paginate(20)

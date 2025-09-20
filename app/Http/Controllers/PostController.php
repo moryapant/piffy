@@ -7,6 +7,7 @@ use App\Models\Subfapp;
 use App\Models\Tag;
 use App\Models\User;
 use App\Models\Visit;
+use App\Services\CacheService;
 use App\Services\PostSorting;
 use App\Services\VisitService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -23,57 +24,22 @@ class PostController extends Controller
     use ValidatesRequests;
 
     protected $postSorting;
+    protected $cacheService;
 
-    public function __construct(PostSorting $postSorting)
+    public function __construct(PostSorting $postSorting, CacheService $cacheService)
     {
         $this->postSorting = $postSorting;
+        $this->cacheService = $cacheService;
         $this->middleware('auth')->except(['index', 'show', 'trendingPosts']);
     }
 
     public function index(Request $request)
     {
         $user = auth()->user();
-
-        $query = Post::with(['user', 'subfapp', 'images', 'tags'])
-            ->withCount('comments')
-            ->when($user, function ($query) use ($user) {
-                $query->with(['userVote' => function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                }]);
-            });
-
-        // Filter posts based on community visibility
-        $query->whereHas('subfapp', function ($subfappQuery) use ($user) {
-            if ($user) {
-                $subfappQuery->where(function ($q) use ($user) {
-                    // Show posts from public and restricted communities
-                    $q->whereIn('type', ['public', 'restricted'])
-                      // OR from communities user is member of
-                        ->orWhereHas('users', function ($userQuery) use ($user) {
-                            $userQuery->where('users.id', $user->id);
-                        })
-                      // OR from communities user created
-                        ->orWhere('created_by', $user->id);
-
-                    // Admins can see all posts
-                    if ($user->is_admin) {
-                        $q->orWhereIn('type', ['private', 'hidden']);
-                    }
-                });
-            } else {
-                // Non-authenticated users can only see posts from public communities
-                $subfappQuery->where('type', 'public');
-            }
-        });
-
-        // Apply sorting based on last 6 hours of activity
         $sort = $request->get('sort', 'hot');
-        $query = match ($sort) {
-            'new' => $this->postSorting->new($query),
-            'top' => $this->postSorting->top($query),  // Now uses 6h window
-            'rising' => $this->postSorting->rising($query),
-            default => $this->postSorting->hot($query),
-        };
+
+        // Use the optimized forHomeFeed scope
+        $query = Post::forHomeFeed($user, $sort);
 
         $posts = $query->paginate(10);
         
@@ -112,43 +78,11 @@ class PostController extends Controller
             return $post;
         });
 
-        // Get popular communities (only show visible ones)
-        $communitiesQuery = Subfapp::withCount(['posts', 'users']);
+        // Get popular communities with caching
+        $communities = $this->cacheService->getPopularCommunities($user, 5);
 
-        if ($user) {
-            $communitiesQuery->where(function ($q) use ($user) {
-                $q->where('type', '!=', 'hidden')
-                    ->orWhere('created_by', $user->id)
-                    ->orWhereHas('users', function ($userQuery) use ($user) {
-                        $userQuery->where('users.id', $user->id);
-                    });
-
-                if ($user->is_admin) {
-                    $q->orWhere('type', 'hidden');
-                }
-            });
-        } else {
-            // Non-authenticated users can only see public and restricted communities
-            $communitiesQuery->whereIn('type', ['public', 'restricted']);
-        }
-
-        $communities = $communitiesQuery->orderBy('posts_count', 'desc')
-            ->take(5)
-            ->get()
-            ->map(function ($community) {
-                return [
-                    'id' => $community->id,
-                    'name' => $community->name,
-                    'display_name' => $community->display_name,
-                    'icon' => $community->cover_image,
-                    'avtaar' => $community->icon,
-                    'posts_count' => $community->posts_count,
-                    'member_count' => $community->users_count,
-                ];
-            });
-
-        // Calculate actual statistics
-        $stats = $this->getActualStats();
+        // Get site statistics with caching
+        $stats = $this->cacheService->getSiteStats();
 
         return Inertia::render('Welcome', [
             'posts' => $posts,
