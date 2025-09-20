@@ -1,0 +1,1 @@
+.shine-effect{animation:shine 2s infinite;transform:skew(-20deg)}@keyframes shine{0%{transform:translate(-100%) skew(-20deg)}to{transform:translate(200%) skew(-20deg)}}@keyframes gradient-x{0%,to{transform:translate(-50%)}50%{transform:translate(50%)}}.animate-gradient-x{animation:gradient-x 3s ease infinite}
