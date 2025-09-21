@@ -39,31 +39,39 @@ info() {
 check_requirements() {
     log "Checking requirements..."
     
-    local missing_commands=()
+    local missing_critical_commands=()
+    local missing_optional_commands=()
     
+    # Critical commands
     if ! command -v git &> /dev/null; then
-        missing_commands+=("git")
+        missing_critical_commands+=("git")
     fi
     
     if ! command -v php &> /dev/null; then
-        missing_commands+=("php")
+        missing_critical_commands+=("php")
     fi
     
     if ! command -v composer &> /dev/null; then
-        missing_commands+=("composer")
+        missing_critical_commands+=("composer")
     fi
     
+    # Optional commands
     if ! command -v npm &> /dev/null; then
-        missing_commands+=("npm")
+        missing_optional_commands+=("npm")
     fi
     
-    if [ ${#missing_commands[@]} -gt 0 ]; then
-        error "Missing required commands: ${missing_commands[*]}"
+    if [ ${#missing_critical_commands[@]} -gt 0 ]; then
+        error "Missing critical commands: ${missing_critical_commands[*]}"
         error "Please install the missing commands and try again."
         exit 1
     fi
     
-    log "✅ All requirements met"
+    if [ ${#missing_optional_commands[@]} -gt 0 ]; then
+        warning "Missing optional commands: ${missing_optional_commands[*]}"
+        warning "Frontend assets will not be built automatically"
+    fi
+    
+    log "✅ Requirements check completed"
 }
 
 # Create deployment directory structure for shared hosting
@@ -129,8 +137,8 @@ deploy() {
     fi
     
     # Install Node dependencies and build assets
-    log "Installing Node dependencies..."
-    if [ -f "package.json" ]; then
+    if command -v npm &> /dev/null && [ -f "package.json" ]; then
+        log "Installing Node dependencies..."
         npm ci || npm install
         
         log "Building frontend assets..."
@@ -141,8 +149,12 @@ deploy() {
         
         # Remove node_modules to save space on shared hosting
         rm -rf node_modules
+    elif [ -f "package.json" ] && ! command -v npm &> /dev/null; then
+        warning "package.json found but npm is not available"
+        warning "Frontend assets will not be built - you may need to build them locally and upload"
+        warning "Or ask your hosting provider to install Node.js/npm"
     else
-        warning "No package.json found, skipping Node.js dependencies"
+        info "No package.json found, skipping Node.js dependencies"
     fi
     
     # Create symlinks to shared directories
