@@ -14,6 +14,7 @@ class Post extends Model
         'title',
         'content',
         'subfapp_id',
+        'flair_id',
         'user_id',
         'upvotes',
         'downvotes',
@@ -22,18 +23,25 @@ class Post extends Model
         'hot_score',
         'views_count',
         'trending_start',
+        'is_pinned',
+        'pinned_at',
+        'pinned_by',
     ];
 
     protected $with = ['tags'];
 
+    protected $appends = ['user_vote'];
+
     protected $casts = [
         'hot_score' => 'float',
         'trending_start' => 'datetime',
+        'pinned_at' => 'datetime',
         'score' => 'integer',
         'views_count' => 'integer',
         'upvotes' => 'integer',
         'downvotes' => 'integer',
         'comment_count' => 'integer',
+        'is_pinned' => 'boolean',
     ];
 
     public function subfapp()
@@ -77,10 +85,39 @@ class Post extends Model
             ->where('user_id', $userId ?? auth()->id());
     }
 
+    // Define a proper relationship for eager loading without parameters
+    public function currentUserVote()
+    {
+        return $this->hasOne(PostVote::class)
+            ->where('user_id', auth()->id());
+    }
+
+    // Accessor to provide user_vote for JSON serialization
+    protected function getUserVoteAttribute()
+    {
+        // If votes are loaded and filtered by user, return the first one
+        if ($this->relationLoaded('votes') && $this->votes->count() > 0) {
+            return $this->votes->first();
+        }
+
+        // Fallback to null
+        return null;
+    }
+
+    public function flair()
+    {
+        return $this->belongsTo(PostFlair::class, 'flair_id');
+    }
+
+    public function pinnedBy()
+    {
+        return $this->belongsTo(User::class, 'pinned_by');
+    }
+
     // Query scopes for better performance
     public function scopeWithUserData($query, ?User $user = null)
     {
-        return $query->with(['user', 'subfapp', 'images', 'tags'])
+        return $query->with(['user', 'subfapp', 'images', 'tags', 'flair'])
             ->withCount('comments')
             ->when($user, function ($q) use ($user) {
                 $q->with(['votes' => function ($voteQuery) use ($user) {
@@ -95,11 +132,11 @@ class Post extends Model
             if ($user) {
                 $subfappQuery->where(function ($q) use ($user) {
                     $q->whereIn('type', ['public', 'restricted'])
-                      ->orWhereHas('users', function ($userQuery) use ($user) {
-                          $userQuery->where('users.id', $user->id);
-                      })
-                      ->orWhere('created_by', $user->id);
-                    
+                        ->orWhereHas('users', function ($userQuery) use ($user) {
+                            $userQuery->where('users.id', $user->id);
+                        })
+                        ->orWhere('created_by', $user->id);
+
                     if ($user->is_admin) {
                         $q->orWhereIn('type', ['private', 'hidden']);
                     }
@@ -117,12 +154,22 @@ class Post extends Model
 
         return match ($sort) {
             'new' => $query->latest('created_at'),
-            'top' => $query->where('created_at', '>=', now()->subHours(6))
-                          ->orderBy('score', 'desc'),
-            'rising' => $query->where('created_at', '>=', now()->subHours(2))
-                             ->where('score', '>', 0)
-                             ->orderBy('score', 'desc'),
-            default => $query->orderBy('hot_score', 'desc'),
+            'top' => $query
+                ->where('created_at', '>=', now()->subHours(6))
+                ->orderByDesc('score')
+                ->orderByDesc('created_at'),
+            'rising' => $query
+                ->where('created_at', '>=', now()->subHours(6))
+                ->withCount(['comments as recent_comments_count' => function ($q) {
+                    $q->where('created_at', '>=', now()->subHours(6));
+                }])
+                ->having('recent_comments_count', '>', 0)
+                ->orderByDesc('recent_comments_count')
+                ->orderByDesc('score')
+                ->orderByDesc('created_at'),
+            default => $query
+                ->orderByDesc('hot_score')
+                ->orderByDesc('created_at'),
         };
     }
 }

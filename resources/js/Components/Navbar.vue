@@ -2,13 +2,15 @@
 import { Link } from "@inertiajs/vue3";
 import { ref } from "vue";
 import ApplicationLogo from "@/Components/ApplicationLogo.vue";
+import NotificationsDropdown from "@/Components/NotificationsDropdown.vue";
+import ThemeToggle from "@/Components/ThemeToggle.vue";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
 
 const isMobileMenuOpen = ref(false);
 </script>
 
 <template>
-  <nav class="fixed top-0 z-50 w-full bg-white border-b border-gray-200">
+  <nav class="fixed top-0 z-50 w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
     <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
@@ -191,10 +193,16 @@ const isMobileMenuOpen = ref(false);
               New Community
             </Link>
 
+            <!-- Notifications Dropdown -->
+            <NotificationsDropdown />
+
+            <!-- Theme Toggle -->
+            <ThemeToggle />
+
             <Menu as="div" class="relative">
               <div>
                 <MenuButton
-                  class="flex items-center p-2 space-x-2 rounded-full hover:bg-gray-100"
+                  class="flex items-center p-2 space-x-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <img
                     :src="
@@ -231,7 +239,7 @@ const isMobileMenuOpen = ref(false);
                 leave-to-class="opacity-0 transform scale-95"
               >
                 <MenuItems
-                  class="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                  class="absolute right-0 mt-2 w-48 origin-top-right bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-5 focus:outline-none"
                 >
                   <div class="py-1">
                     <MenuItem v-slot="{ active }">

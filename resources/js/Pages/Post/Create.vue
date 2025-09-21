@@ -171,6 +171,47 @@
             />
           </div>
 
+          <!-- Flair Selection -->
+          <div v-if="form.subfapp_id && selectedSubfapp && selectedSubfapp.flairs?.length > 0" class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Post Flair <span class="text-gray-400">(Optional)</span>
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                @click="form.flair_id = null"
+                :class="[
+                  'px-3 py-1.5 text-sm font-medium rounded-full border transition-colors',
+                  !form.flair_id
+                    ? 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'
+                    : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700'
+                ]"
+              >
+                No Flair
+              </button>
+              <button
+                v-for="flair in selectedSubfapp.flairs"
+                :key="flair.id"
+                type="button"
+                @click="form.flair_id = flair.id"
+                :class="[
+                  'px-3 py-1.5 text-sm font-medium rounded-full border transition-colors',
+                  form.flair_id === flair.id
+                    ? 'border-2'
+                    : 'border hover:opacity-75'
+                ]"
+                :style="{
+                  color: flair.color,
+                  backgroundColor: flair.background_color,
+                  borderColor: flair.color
+                }"
+                :title="flair.description"
+              >
+                {{ flair.name }}
+              </button>
+            </div>
+          </div>
+
           <!-- Tags -->
           <div>
             <div class="flex flex-wrap gap-2 mb-2">
@@ -239,7 +280,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
 import MainLayout from "@/Layouts/MainLayout.vue";
 import RichTextEditor from "@/Components/RichTextEditor.vue";
@@ -252,7 +293,7 @@ import {
   LinkIcon,
 } from '@heroicons/vue/24/outline';
 
-defineProps({
+const props = defineProps({
   subfapps: {
     type: Array,
     required: true,
@@ -266,6 +307,7 @@ defineProps({
     default: () => ({}),
   },
 });
+
 
 // Post type configuration
 const postTypes = [
@@ -288,6 +330,12 @@ const form = useForm({
   tags: "",
   images: [],
   link_url: "",
+  flair_id: null,
+});
+
+// Computed property for selected subfapp
+const selectedSubfapp = computed(() => {
+  return props.subfapps.find(subfapp => subfapp.id == form.subfapp_id);
 });
 
 // Watch for tag changes
@@ -322,6 +370,14 @@ watch(
       form.images = [];
       imagePreviewUrls.value = [];
     }
+  }
+);
+
+// Watch for subfapp changes to reset flair
+watch(
+  () => form.subfapp_id,
+  () => {
+    form.flair_id = null; // Reset flair when subfapp changes
   }
 );
 

@@ -9,18 +9,14 @@ use Illuminate\Database\Eloquent\Builder;
 class PostSorting
 {
     /**
-     * Hot: Most views in last few hours
+     * Hot: Posts with high engagement using hot_score algorithm
+     * Combines votes, comments, views with time decay
      */
     public function hot(Builder $query): Builder
     {
-        $threshold = Carbon::now()->subHours(6); // Last 6 hours
-
         return $query
-            ->withCount(['views' => function ($query) use ($threshold) {
-                $query->where('created_at', '>=', $threshold);
-            }])
-            ->orderBy('views_count', 'desc')
-            ->orderBy('created_at', 'desc');
+            ->orderByDesc('hot_score')
+            ->orderByDesc('created_at');
     }
 
     /**
@@ -120,17 +116,39 @@ class PostSorting
         $downvotes = $post->votes()->where('vote_type', -1)->count();
         $score = $upvotes - $downvotes;
 
+        // Get recent engagement metrics (last 6 hours)
+        $recentComments = $post->comments()
+            ->where('created_at', '>=', Carbon::now()->subHours(6))
+            ->count();
+        $recentViews = $post->views()
+            ->where('created_at', '>=', Carbon::now()->subHours(6))
+            ->count();
+
         $post->score = $score;
 
-        // Calculate hot score using Reddit's algorithm
-        $order = log10(max(abs($score), 1));
+        // Enhanced hot score calculation
+        // Base score from votes
+        $baseScore = max(abs($score), 1);
+        $order = log10($baseScore);
         $sign = $score > 0 ? 1 : ($score < 0 ? -1 : 0);
-        $seconds = $post->created_at->timestamp - 1134028003; // Reddit's epoch
-        $post->hot_score = round($sign * $order + $seconds / 45000, 7);
 
-        // Update trending status if score is high
-        if ($score >= 5 && ! $post->trending_start) { // Lower threshold for testing
+        // Time decay (Reddit's algorithm)
+        $seconds = $post->created_at->timestamp - 1134028003;
+
+        // Engagement boost from recent activity
+        $engagementBoost = ($recentComments * 0.5) + ($recentViews * 0.1);
+
+        $post->hot_score = round(
+            ($sign * $order) + ($seconds / 45000) + $engagementBoost,
+            7
+        );
+
+        // Update trending status with lower threshold for better visibility
+        if (($score >= 3 || $recentComments >= 2) && ! $post->trending_start) {
             $post->trending_start = Carbon::now();
+        } elseif ($post->trending_start && $post->trending_start <= Carbon::now()->subHours(24)) {
+            // Remove trending after 24 hours
+            $post->trending_start = null;
         }
 
         $post->save();

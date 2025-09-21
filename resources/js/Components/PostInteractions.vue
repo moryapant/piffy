@@ -55,17 +55,18 @@ const hasDownvoted = computed(() => userVote.value === -1);
   ]">
     
     <!-- Vote Buttons Container - Mobile First Touch-Friendly -->
-    <div class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 sm:px-2 sm:py-1 md:px-3 md:py-1.5 lg:px-3 lg:py-1.5">
+    <div class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-1 sm:px-2 sm:py-1 md:px-3 md:py-1.5 lg:px-3 lg:py-1.5 transition-colors duration-200">
       <!-- Upvote Button -->
       <button 
         @click.stop.prevent="handleVote(1)"
         :class="[
           'flex items-center justify-center rounded-full transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-offset-1',
-          'w-12 h-10 sm:w-8 sm:h-8 md:w-10 md:h-9 lg:w-12 lg:h-10', // Mobile: 48x40px (optimal touch), then progressive
+          'w-12 h-12 sm:w-10 sm:h-10 md:w-10 md:h-10 lg:w-12 lg:h-12', // Larger touch targets on mobile
+          'touch-manipulation', // Improve touch responsiveness
           hasUpvoted 
-            ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600 focus:ring-blue-500' 
-            : 'text-gray-500 hover:text-blue-500 hover:bg-blue-50 focus:ring-blue-200'
+            ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600 focus:ring-blue-500 active:scale-95' 
+            : 'text-gray-500 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:ring-blue-200 dark:focus:ring-blue-800 active:scale-95'
         ]"
         :title="hasUpvoted ? 'Remove like' : 'Like'"
       >
@@ -79,7 +80,7 @@ const hasDownvoted = computed(() => userVote.value === -1);
         'font-semibold text-center select-none',
         'px-3 min-w-[3rem] sm:px-2 sm:min-w-[2rem] md:px-3 md:min-w-[3rem] lg:px-3 lg:min-w-[3.5rem]',
         'text-sm sm:text-xs md:text-sm lg:text-sm', // Larger text on mobile for readability
-        totalScore > 0 ? 'text-blue-600' : totalScore < 0 ? 'text-red-600' : 'text-gray-600'
+        totalScore > 0 ? 'text-blue-600 dark:text-blue-400' : totalScore < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-300'
       ]">
         {{ totalScore }}
       </div>
@@ -90,10 +91,11 @@ const hasDownvoted = computed(() => userVote.value === -1);
         :class="[
           'flex items-center justify-center rounded-full transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-offset-1',
-          'w-12 h-10 sm:w-8 sm:h-8 md:w-10 md:h-9 lg:w-12 lg:h-10', // Mobile: 48x40px (optimal touch), then progressive
+          'w-12 h-12 sm:w-10 sm:h-10 md:w-10 md:h-10 lg:w-12 lg:h-12', // Larger touch targets on mobile
+          'touch-manipulation', // Improve touch responsiveness
           hasDownvoted 
-            ? 'bg-red-500 text-white shadow-md hover:bg-red-600 focus:ring-red-500' 
-            : 'text-gray-500 hover:text-red-500 hover:bg-red-50 focus:ring-red-200'
+            ? 'bg-red-500 text-white shadow-md hover:bg-red-600 focus:ring-red-500 active:scale-95' 
+            : 'text-gray-500 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 focus:ring-red-200 dark:focus:ring-red-800 active:scale-95'
         ]"
         :title="hasDownvoted ? 'Remove dislike' : 'Dislike'"
       >
@@ -106,7 +108,7 @@ const hasDownvoted = computed(() => userVote.value === -1);
     <!-- Comments Button -->
     <Link
       :href="route('posts.show', post.id)"
-      class="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 lg:px-4 lg:py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+      class="flex items-center gap-2 px-3 py-2 sm:py-1.5 md:px-4 md:py-2 lg:px-4 lg:py-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:ring-offset-1 touch-manipulation active:scale-95 min-h-[44px] sm:min-h-[36px]"
       @click.stop
     >
       <!-- Comment Icon -->
@@ -124,7 +126,7 @@ const hasDownvoted = computed(() => userVote.value === -1);
     </Link>
 
     <!-- Views Count -->
-    <div class="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 lg:px-4 lg:py-2 rounded-full bg-gray-50 text-gray-600 select-none">
+    <div class="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 lg:px-4 lg:py-2 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 select-none transition-colors duration-200">
       <!-- Eye Icon -->
       <svg class="w-6 h-6 md:w-7 md:h-7 lg:w-7 lg:h-7 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

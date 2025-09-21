@@ -24,13 +24,13 @@ class PostController extends Controller
     use ValidatesRequests;
 
     protected $postSorting;
+
     protected $cacheService;
 
     public function __construct(PostSorting $postSorting, CacheService $cacheService)
     {
         $this->postSorting = $postSorting;
         $this->cacheService = $cacheService;
-        $this->middleware('auth')->except(['index', 'show', 'trendingPosts']);
     }
 
     public function index(Request $request)
@@ -42,20 +42,21 @@ class PostController extends Controller
         $query = Post::forHomeFeed($user, $sort);
 
         $posts = $query->paginate(10);
-        
+
         // Track home page views for each post displayed (bulk update for performance)
         $postIds = $posts->pluck('id')->toArray();
-        if (!empty($postIds)) {
+        if (! empty($postIds)) {
             // Only increment views_count once per unique IP per post per hour to avoid spam
             $this->trackBulkPostViews($postIds, $request);
-            
+
             // Refresh views_count in the loaded posts collection after incrementing
             $updatedViewsCounts = \DB::table('posts')
                 ->whereIn('id', $postIds)
                 ->pluck('views_count', 'id');
-                
+
             $posts->through(function ($post) use ($updatedViewsCounts) {
                 $post->views_count = $updatedViewsCounts[$post->id] ?? $post->views_count;
+
                 return $post;
             });
         }
@@ -97,6 +98,11 @@ class PostController extends Controller
     public function create()
     {
         $subfapps = Subfapp::select('id', 'name', 'display_name')
+            ->with(['flairs' => function ($query) {
+                $query->where('is_active', true)
+                    ->orderBy('order')
+                    ->select('id', 'subfapp_id', 'name', 'color', 'background_color', 'description');
+            }])
             ->orderBy('display_name')
             ->get();
 
@@ -112,6 +118,7 @@ class PostController extends Controller
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
             'subfapp_id' => 'required|exists:subfapps,id',
+            'flair_id' => 'nullable|exists:post_flairs,id',
             'tags' => 'nullable|string',
             'images' => 'nullable|array',
             'images.*' => 'mimes:jpeg,webp,png,jpg,gif,mp4|max:10240',
@@ -180,10 +187,17 @@ class PostController extends Controller
 
     public function show(Post $post, Request $request)
     {
-        $post->load(['user', 'subfapp.users', 'images', 'tags'])
+        $post->load(['user', 'subfapp.users', 'images', 'tags', 'flair'])
             ->loadCount('comments')
             ->load(['comments' => function ($query) {
                 $query->with('user')->latest();
+
+                // Load user votes for comments if authenticated
+                if (auth()->check()) {
+                    $query->with(['votes' => function ($voteQuery) {
+                        $voteQuery->where('user_id', auth()->id());
+                    }]);
+                }
             }]);
 
         // Load member count for subfapp
@@ -191,9 +205,9 @@ class PostController extends Controller
             $post->subfapp->loadCount('users');
         }
 
-        // Only load user vote if authenticated
+        // Load user votes if authenticated
         if (auth()->check()) {
-            $post->load(['userVote' => function ($query) {
+            $post->load(['votes' => function ($query) {
                 $query->where('user_id', auth()->id());
             }]);
         }
@@ -453,7 +467,7 @@ class PostController extends Controller
                 ->where('created_at', '>=', $hourlyThreshold)
                 ->exists();
 
-            if (!$recentView) {
+            if (! $recentView) {
                 // Create view record
                 \DB::table('post_views')->insert([
                     'post_id' => $postId,

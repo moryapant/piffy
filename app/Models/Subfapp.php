@@ -55,6 +55,26 @@ class Subfapp extends Model
         return $this->belongsToMany(User::class, 'user_subfapp');
     }
 
+    public function flairs()
+    {
+        return $this->hasMany(PostFlair::class);
+    }
+
+    public function activeFlairs()
+    {
+        return $this->flairs()->active()->ordered();
+    }
+
+    public function rules()
+    {
+        return $this->hasMany(CommunityRule::class);
+    }
+
+    public function activeRules()
+    {
+        return $this->rules()->active()->ordered();
+    }
+
     public function isPublic(): bool
     {
         return $this->type === 'public';
@@ -163,6 +183,7 @@ class Subfapp extends Model
                 $q->where('users.id', $user->id);
             }]);
         }
+
         return $query;
     }
 }

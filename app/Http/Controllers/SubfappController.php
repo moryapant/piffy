@@ -21,7 +21,7 @@ class SubfappController extends Controller
     public function __construct(CacheService $cacheService)
     {
         $this->cacheService = $cacheService;
-        $this->middleware('auth')->except(['index', 'show']);
+        // Middleware applied at route level
     }
 
     public function updateCover(Request $request, Subfapp $subfapp)
@@ -209,10 +209,11 @@ class SubfappController extends Controller
                 $query->latest();
                 break;
             case 'top':
-                $query->orderBy('score', 'desc');
+                $query->where('created_at', '>=', now()->subHours(6))
+                    ->orderBy('score', 'desc');
                 break;
             case 'rising':
-                $query->where('created_at', '>=', now()->subHours(24))
+                $query->where('created_at', '>=', now()->subHours(6))
                     ->orderBy('score', 'desc');
                 break;
             default: // 'hot'

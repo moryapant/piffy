@@ -4,12 +4,14 @@ import UserAvatar from "@/Components/UserAvatar.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
 import PopularCommunities from "@/Components/PopularCommunities.vue";
 import PostSortTabs from "@/Components/PostSortTabs.vue";
+import InfiniteScroll from "@/Components/InfiniteScroll.vue";
 import { ref, onMounted, onUnmounted, watch } from "vue";
 import { timeAgo } from "@/utils/dateUtils";
 import { router } from "@inertiajs/vue3";
 import axios from 'axios';
-import ImageGallery from "@/Components/ImageGallery.vue"; // This line was already present in your code
+import ImageGallery from "@/Components/ImageGallery.vue";
 import PostInteractions from "@/Components/PostInteractions.vue";
+import PostFlair from "@/Components/PostFlair.vue";
 
 const props = defineProps({
   posts: {
@@ -29,21 +31,14 @@ const props = defineProps({
   }
 });
 
-const currentPage = ref(1);
-
-const goToPage = (page) => {
-  router.get(
-    route(route().current()),
-    { page: page },
-    {
-      preserveState: true,
-      preserveScroll: false,
-      only: ["posts"],
-      onFinish: () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      },
-    }
-  );
+// Handle infinite scroll load more
+const handleLoadMore = ({ newItems, totalItems }) => {
+  console.log(`Loaded ${newItems.length} new posts. Total: ${totalItems.length}`);
+  // Update the reactive posts data with new items
+  if (postsData.value && postsData.value.data) {
+    postsData.value.data = totalItems;
+    postsData.value.total = totalItems.length;
+  }
 };
 
 const selectedImage = ref(null);
@@ -73,26 +68,60 @@ const navigateImage = (direction) => {
   }
 };
 
-const form = useForm({
-  vote_type: null,
-});
+// Store posts data reactively
+const postsData = ref(props.posts);
 
-const vote = (postId, voteType) => {
-  // Reset the form before setting new values
-  form.reset();
-  // Ensure voteType is an integer
-  form.vote_type = parseInt(voteType);
-  console.log('Voting:', { postId, voteType: parseInt(voteType), originalType: voteType });
-  form.post(route("posts.vote", postId), {
-    preserveScroll: true,
-    onSuccess: () => {
-      // Optional: You could add a small notification here if desired
+const vote = async (postId, voteType) => {
+  try {
+    console.log('Voting:', { postId, voteType });
+    
+    // Make AJAX request to vote endpoint
+    const response = await axios.post(route("posts.vote", postId), {
+      vote_type: parseInt(voteType)
+    }, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+      }
+    });
+    
+    if (response.data.success) {
+      // Update the post data reactively
+      updatePostVoteData(postId, response.data);
       console.log('Vote recorded successfully');
-    },
-    onError: (errors) => {
-      console.error('Error recording vote:', errors);
     }
-  });
+  } catch (error) {
+    console.error('Error recording vote:', error);
+    // Show error notification if needed
+  }
+};
+
+// Function to update post vote data in the UI
+const updatePostVoteData = (postId, voteData) => {
+  // Find and update the post in the posts data
+  const findAndUpdatePost = (posts) => {
+    for (let post of posts) {
+      if (post.id === postId) {
+        post.upvotes = voteData.upvotes;
+        post.downvotes = voteData.downvotes;
+        post.score = voteData.score;
+        post.user_vote = voteData.user_vote;
+        return true;
+      }
+    }
+    return false;
+  };
+  
+  // Update in main posts array
+  if (postsData.value && postsData.value.data) {
+    findAndUpdatePost(postsData.value.data);
+  }
+  
+  // Also update in the original props.posts if needed
+  if (props.posts && props.posts.data) {
+    findAndUpdatePost(props.posts.data);
+  }
 };
 
 const visitRandomCommunity = () => {
@@ -111,9 +140,9 @@ const visitRandomCommunity = () => {
 
 const visitRandomPost = () => {
   // Navigate to a random post if posts are available
-  if (props.posts && props.posts.data && props.posts.data.length > 0) {
-    const randomIndex = Math.floor(Math.random() * props.posts.data.length);
-    const randomPost = props.posts.data[randomIndex];
+  if (postsData.value && postsData.value.data && postsData.value.data.length > 0) {
+    const randomIndex = Math.floor(Math.random() * postsData.value.data.length);
+    const randomPost = postsData.value.data[randomIndex];
     if (randomPost && randomPost.id) {
       router.get(route('posts.show', randomPost.id));
       return;
@@ -181,7 +210,7 @@ const fetchTrendingPosts = async () => {
   } catch (error) {
     console.error('Failed to fetch trending posts:', error);
     // Fallback to first 5 posts from main feed
-    trendingPosts.value = props.posts.data.slice(0, 5).map((post, index) => ({
+    trendingPosts.value = postsData.value.data.slice(0, 5).map((post, index) => ({
       id: post.id,
       title: post.title,
       score: post.score || 0,
@@ -193,6 +222,12 @@ const fetchTrendingPosts = async () => {
   } finally {
     isLoadingTrending.value = false;
   }
+};
+
+const handleFlairClick = (flair) => {
+  // Navigate to filtered view by flair (you can implement this later)
+  console.log('Flair clicked:', flair);
+  // router.get(route('home', { flair: flair.id }));
 };
 
 onMounted(() => {
@@ -549,7 +584,7 @@ onMounted(() => {
           </div>
 
 
-          <!-- Reddit-style Posts Feed -->
+          <!-- Reddit-style Posts Feed with Infinite Scroll -->
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div class="flex items-center justify-between p-4 border-b border-gray-100">
               <h2 class="text-xl font-black text-gray-900 flex items-center">
@@ -557,160 +592,153 @@ onMounted(() => {
                 Latest Posts
               </h2>
               <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500">{{ posts.total || posts.data.length }} posts</span>
+                <span class="text-sm text-gray-500">{{ postsData.total || postsData.data.length }} posts</span>
                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Live feed"></div>
               </div>
             </div>
 
-            <!-- Posts List -->
-            <div class="divide-y divide-gray-100">
-              <div
-                v-for="post in posts.data"
-                :key="post.id"
-                class="relative hover:bg-gray-50 transition-all duration-300 group rounded-xl mb-3 border border-gray-200 shadow-sm overflow-hidden bg-white"
-              >
-                <div class="p-3">
-                  <!-- Post Content -->
-                  <div class="flex-1 min-w-0">
-                    <!-- Post Header (Reddit-style) -->
-                    <div class="flex items-center flex-wrap text-xs text-gray-500 mb-2">
-                      <template v-if="post.subfapp">
-                        <Link
-                          :href="route('subfapps.show', post.subfapp.id)"
-                          class="flex items-center mr-2"
-                          @click.stop
-                        >
-                          <div class="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-red-500 mr-1.5 flex items-center justify-center text-white text-xs font-bold">f</div>
-                          <span class="font-medium text-black hover:text-orange-600 transition-colors duration-200">
-                            f/{{ post.subfapp.name }}
-                          </span>
-                        </Link>
-                      </template>
-                      <template v-else>
-                        <span class="flex items-center mr-2">
-                          <div class="w-5 h-5 rounded-full bg-gray-300 mr-1.5 flex items-center justify-center text-white text-xs font-bold">f</div>
-                          <span class="font-medium text-gray-800">
-                            f/general
-                          </span>
-                        </span>
-                      </template>
-                      
-                      <span class="mr-2 flex items-center">
-                        Posted by
-                        <Link
-                          :href="route('users.profile', post.user.id)"
-                          class="font-medium hover:text-orange-600 transition-colors duration-200 ml-1"
-                          @click.stop
-                        >
-                          u/{{ post.user.name }}
-                        </Link>
-                      </span>
-                      
-                      <span class="flex items-center">
-                        <span class="inline-block w-1 h-1 rounded-full bg-gray-400 mr-1"></span> 
-                        {{ timeAgo(post.created_at) }}
-                      </span>
-                      
-                      <template v-if="post.user_vote || (post.tags && post.tags.length > 0)">
-                        <div class="flex items-center ml-2">
-                          <template v-if="post.user_vote && post.user_vote.vote_type === 1">
-                            <span class="bg-orange-100 text-orange-600 text-xs px-1.5 py-0.5 rounded-sm font-medium mr-1">UPVOTED</span>
+            <!-- Infinite Scroll Posts -->
+            <InfiniteScroll
+              :initial-data="postsData"
+              :load-more-url="route('home')"
+              :auto-load="true"
+              @load-more="handleLoadMore"
+            >
+              <template #default="{ items, loading }">
+                <div class="divide-y divide-gray-100">
+                  <div
+                    v-for="post in items"
+                    :key="post.id"
+                    class="relative hover:bg-gray-50 transition-all duration-300 group rounded-xl mb-3 border border-gray-200 shadow-sm overflow-hidden bg-white"
+                  >
+                    <div class="p-3">
+                      <!-- Post Content -->
+                      <div class="flex-1 min-w-0">
+                        <!-- Post Header (Reddit-style) -->
+                        <div class="flex items-center flex-wrap text-xs text-gray-500 mb-2">
+                          <template v-if="post.subfapp">
+                            <Link
+                              :href="route('subfapps.show', post.subfapp.id)"
+                              class="flex items-center mr-2"
+                              @click.stop
+                            >
+                              <div class="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-red-500 mr-1.5 flex items-center justify-center text-white text-xs font-bold">f</div>
+                              <span class="font-medium text-black hover:text-orange-600 transition-colors duration-200">
+                                f/{{ post.subfapp.name }}
+                              </span>
+                            </Link>
                           </template>
-                          <template v-if="post.user_vote && post.user_vote.vote_type === -1">
-                            <span class="bg-blue-100 text-blue-600 text-xs px-1.5 py-0.5 rounded-sm font-medium mr-1">DOWNVOTED</span>
+                          <template v-else>
+                            <span class="flex items-center mr-2">
+                              <div class="w-5 h-5 rounded-full bg-gray-300 mr-1.5 flex items-center justify-center text-white text-xs font-bold">f</div>
+                              <span class="font-medium text-gray-800">
+                                f/general
+                              </span>
+                            </span>
+                          </template>
+                          
+                          <span class="mr-2 flex items-center">
+                            Posted by
+                            <Link
+                              :href="route('users.profile', post.user.id)"
+                              class="font-medium hover:text-orange-600 transition-colors duration-200 ml-1"
+                              @click.stop
+                            >
+                              u/{{ post.user.name }}
+                            </Link>
+                          </span>
+                          
+                          <span class="flex items-center">
+                            <span class="inline-block w-1 h-1 rounded-full bg-gray-400 mr-1"></span> 
+                            {{ timeAgo(post.created_at) }}
+                          </span>
+                          
+                          <template v-if="post.user_vote || (post.tags && post.tags.length > 0)">
+                            <div class="flex items-center ml-2">
+                              <template v-if="post.user_vote && post.user_vote.vote_type === 1">
+                                <span class="bg-orange-100 text-orange-600 text-xs px-1.5 py-0.5 rounded-sm font-medium mr-1">UPVOTED</span>
+                              </template>
+                              <template v-if="post.user_vote && post.user_vote.vote_type === -1">
+                                <span class="bg-blue-100 text-blue-600 text-xs px-1.5 py-0.5 rounded-sm font-medium mr-1">DOWNVOTED</span>
+                              </template>
+                            </div>
                           </template>
                         </div>
-                      </template>
-                    </div>
 
-                    <!-- Tags (Reddit-style) -->
-                    <div
-                      v-if="post.tags?.length"
-                      class="flex flex-wrap gap-1 mb-2"
-                    >
-                      <span
-                        v-for="tag in post.tags"
-                        :key="tag.id"
-                        class="px-2 py-0.5 text-xs font-medium text-orange-700 bg-orange-50 rounded-full border border-orange-100 hover:bg-orange-100 transition-all duration-200 cursor-pointer"
-                      >
-                        #{{ tag.name }}
-                      </span>
-                    </div>
-
-                    <!-- Post Title -->
-                    <Link
-                      :href="route('posts.show', post.id)"
-                      class="block hover:no-underline"
-                    >
-                      <h2 class="text-lg font-bold text-gray-900 hover:text-orange-600 transition-colors duration-200 leading-tight mb-2">
-                        {{ post.title }}
-                      </h2>
-                    </Link>
-
-                    <!-- Post Content -->
-                    <Link
-                      v-if="post.content && (!post.images || post.images.length === 0)"
-                      :href="route('posts.show', post.id)"
-                      class="block hover:no-underline"
-                    >
-                      <div class="text-sm text-gray-600 line-clamp-3 overflow-hidden mb-3" v-html="post.content"></div>
-                    </Link>
-                    
-                    <!-- Image Gallery -->
-                    <div v-if="post.images?.length" class="mb-3 mt-2">
-                      <Link
-                        :href="route('posts.show', post.id)"
-                        class="block hover:no-underline"
-                      >
-                        <div class="relative rounded-md overflow-hidden bg-gray-100">
-                          <ImageGallery :images="post.images" class="max-h-[400px] w-full object-cover" />
+                        <!-- Post Flair -->
+                        <div v-if="post.flair" class="mb-2">
+                          <PostFlair
+                            :flair="post.flair"
+                            size="sm"
+                            @click="handleFlairClick"
+                          />
                         </div>
-                      </Link>
-                    </div>
 
-                    <!-- Post Actions (with inline vote buttons) -->
-                    <div class="mt-2">
-                      <PostInteractions 
-                        :post="post" 
-                        @vote="vote" 
-                      />
+                        <!-- Tags (Reddit-style) -->
+                        <div
+                          v-if="post.tags?.length"
+                          class="flex flex-wrap gap-1 mb-2"
+                        >
+                          <span
+                            v-for="tag in post.tags"
+                            :key="tag.id"
+                            class="px-2 py-0.5 text-xs font-medium text-orange-700 bg-orange-50 rounded-full border border-orange-100 hover:bg-orange-100 transition-all duration-200 cursor-pointer"
+                          >
+                            #{{ tag.name }}
+                          </span>
+                        </div>
+
+                        <!-- Post Title -->
+                        <Link
+                          :href="route('posts.show', post.id)"
+                          class="block hover:no-underline"
+                        >
+                          <h2 class="text-lg font-bold text-gray-900 hover:text-orange-600 transition-colors duration-200 leading-tight mb-2">
+                            {{ post.title }}
+                          </h2>
+                        </Link>
+
+                        <!-- Post Content -->
+                        <Link
+                          v-if="post.content && (!post.images || post.images.length === 0)"
+                          :href="route('posts.show', post.id)"
+                          class="block hover:no-underline"
+                        >
+                          <div class="text-sm text-gray-600 line-clamp-3 overflow-hidden mb-3" v-html="post.content"></div>
+                        </Link>
+                        
+                        <!-- Image Gallery -->
+                        <div v-if="post.images?.length" class="mb-3 mt-2">
+                          <Link
+                            :href="route('posts.show', post.id)"
+                            class="block hover:no-underline"
+                          >
+                            <div class="relative rounded-md overflow-hidden bg-gray-100">
+                              <ImageGallery :images="post.images" class="max-h-[400px] w-full object-cover" />
+                            </div>
+                          </Link>
+                        </div>
+
+                        <!-- Post Actions (with inline vote buttons) -->
+                        <div class="mt-2">
+                          <PostInteractions 
+                            :post="post" 
+                            @vote="vote" 
+                          />
+                        </div>
+                        
+                      </div>
                     </div>
-                    
                   </div>
                 </div>
-              </div>
-            </div>
+              </template>
+            </InfiniteScroll>
           </div>
 
-          <!-- Reddit-style Pagination -->
-          <div
-            class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mt-6"
-            v-if="posts.links && posts.links.length > 3"
-          >
-            <nav
-              class="flex justify-center items-center space-x-2"
-              aria-label="Pagination"
-            >
-              <button
-                v-for="link in posts.links"
-                :key="link.label"
-                @click="goToPage(link.url ? link.url.split('?page=')[1] : 1)"
-                :disabled="!link.url"
-                :class="[
-                  'relative inline-flex items-center px-3 py-2 text-sm font-bold transition-all duration-200 rounded-lg',
-                  link.active
-                    ? 'bg-orange-500 text-white shadow-md transform scale-105'
-                    : 'bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-600',
-                  !link.url && 'cursor-not-allowed opacity-50',
-                ]"
-                v-html="link.label"
-              ></button>
-            </nav>
-          </div>
 
           <!-- Empty State -->
           <div
-            v-if="posts.data.length === 0"
+            v-if="postsData.data.length === 0"
             class="p-12 text-center bg-white rounded-xl shadow-sm"
           >
             <svg

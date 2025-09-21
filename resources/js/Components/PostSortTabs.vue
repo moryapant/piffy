@@ -18,8 +18,9 @@ const isActive = (sort) => computed(() => props.currentSort === sort);
 const sortOptions = [
   {
     label: 'Hot',
-    labelLg: 'Hot (6h)',
+    labelLg: 'Hot',
     value: 'hot',
+    description: 'Trending posts with high engagement',
     icon: (props) => h('svg', {
       ...props,
       fill: 'none',
@@ -32,36 +33,39 @@ const sortOptions = [
     label: 'New',
     labelLg: 'New',
     value: 'new',
+    description: 'Latest posts chronologically',
     icon: (props) => h('svg', {
       ...props,
       fill: 'none',
       stroke: 'currentColor',
       viewBox: '0 0 24 24',
-      innerHTML: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />`
+      innerHTML: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />`
     })
   },
   {
     label: 'Top',
-    labelLg: 'Top Votes (6h)',
+    labelLg: 'Top Votes',
     value: 'top',
-    icon: (props) => h('svg', {
-      ...props,
-      fill: 'none',
-      stroke: 'currentColor',
-      viewBox: '0 0 24 24',
-      innerHTML: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7" />`
-    })
-  },
-  {
-    label: 'Active',
-    labelLg: 'Most Active (6h)',
-    value: 'rising',
+    description: 'Most upvoted posts (6h)',
     icon: (props) => h('svg', {
       ...props,
       fill: 'none',
       stroke: 'currentColor',
       viewBox: '0 0 24 24',
       innerHTML: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />`
+    })
+  },
+  {
+    label: 'Active',
+    labelLg: 'Most Active',
+    value: 'rising',
+    description: 'Most commented posts (6h)',
+    icon: (props) => h('svg', {
+      ...props,
+      fill: 'none',
+      stroke: 'currentColor',
+      viewBox: '0 0 24 24',
+      innerHTML: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m10 0v8a2 2 0 01-2 2H9a2 2 0 01-2-2v-8m4-2v2m0 0v6" />`
     })
   }
 ];
@@ -75,6 +79,8 @@ const sortOptions = [
         :key="option.value"
         :href="subfappId ? route('subfapps.show', { subfapp: subfappId, sort: option.value }) : route('home', { sort: option.value })"
         :preserve-scroll="true"
+        :title="option.description"
+        :aria-label="`Sort posts by ${option.label.toLowerCase()}: ${option.description}`"
         class="group flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 flex-1 justify-center relative overflow-hidden"
         :class="{
           'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:scale-[1.02] hover:-translate-y-0.5': isActive(option.value),

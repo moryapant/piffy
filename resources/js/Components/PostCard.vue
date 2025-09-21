@@ -1,6 +1,6 @@
 <template>
   <div
-    class="overflow-hidden rounded-2xl border shadow-sm backdrop-blur-sm transition-all duration-200 bg-white/90 border-gray-100/50 hover:border-blue-200/50 hover:shadow-md group"
+    class="overflow-hidden rounded-2xl border shadow-sm backdrop-blur-sm transition-all duration-200 bg-white/90 dark:bg-gray-800/90 border-gray-100/50 dark:border-gray-700/50 hover:border-blue-200/50 dark:hover:border-blue-600/50 hover:shadow-md group"
   >
     <div class="p-3 sm:p-4 md:p-6">
       <!-- Post Header -->
@@ -14,12 +14,12 @@
 
         <!-- Post Meta -->
         <div class="flex-grow">
-          <div class="flex flex-wrap gap-1 sm:gap-2 items-center text-xs sm:text-sm text-gray-600">
-            <span class="font-medium text-gray-900">{{ post.user.name }}</span>
-            <span class="text-gray-400">•</span>
+          <div class="flex flex-wrap gap-1 sm:gap-2 items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+            <span class="font-medium text-gray-900 dark:text-white">{{ post.user.name }}</span>
+            <span class="text-gray-400 dark:text-gray-500">•</span>
             <span>{{ formatDate(post.created_at) }}</span>
           </div>
-          <div class="mt-0.5 text-xs text-gray-500 hidden sm:block">
+          <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
             {{ post.community ? post.community.name : "General" }}
           </div>
         </div>
@@ -51,14 +51,14 @@
       <div class="space-y-4">
         <!-- Title -->
         <h2
-          class="text-base sm:text-lg font-semibold text-gray-900 transition-colors md:text-xl group-hover:text-blue-600 leading-tight"
+          class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white transition-colors md:text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-tight"
         >
           {{ post.title }}
         </h2>
 
         <!-- Content -->
         <div
-          class="text-sm text-gray-600 sm:text-base line-clamp-3 sm:line-clamp-none"
+          class="text-sm text-gray-600 dark:text-gray-300 sm:text-base line-clamp-3 sm:line-clamp-none"
           v-html="post.content"
         ></div>
 
@@ -79,7 +79,7 @@
       </div>
 
       <!-- Post Footer -->
-      <div class="pt-3 sm:pt-4 mt-4 sm:mt-6 border-t border-gray-100">
+      <div class="pt-3 sm:pt-4 mt-4 sm:mt-6 border-t border-gray-100 dark:border-gray-700">
         <PostInteractions 
           :post="post" 
           @vote="vote" 

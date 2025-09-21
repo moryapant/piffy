@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Post;
+use App\Services\NotificationService;
 use App\Services\VisitService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -13,9 +14,11 @@ class CommentController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
     {
-        $this->middleware('auth');
+        $this->notificationService = $notificationService;
     }
 
     public function store(Request $request, Post $post)
@@ -29,6 +32,12 @@ class CommentController extends Controller
         $comment->post_id = $post->id;
         $comment->save();
 
+        // Load the user relationship for notification
+        $comment->load('user');
+
+        // Create notification for post owner
+        $this->notificationService->createCommentNotification($comment, $post);
+
         // Record the comment activity using the service
         VisitService::recordActivity(
             $request,
@@ -38,6 +47,22 @@ class CommentController extends Controller
             'Comment',
             ['comment_id' => $comment->id, 'post_id' => $post->id]
         );
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            // Load user votes if authenticated
+            if (auth()->check()) {
+                $comment->load(['votes' => function ($query) {
+                    $query->where('user_id', auth()->id());
+                }]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comment added successfully!',
+                'comment' => $comment->toArray(),
+            ]);
+        }
 
         return back()->with('success', 'Comment added successfully!');
     }
@@ -104,6 +129,15 @@ class CommentController extends Controller
             ['comment_id' => $comment->id, 'post_id' => $comment->post_id]
         );
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Comment updated successfully!',
+                'comment' => $comment->toArray(),
+            ]);
+        }
+
         return redirect()->route('posts.show', $comment->post)
             ->with('success', 'Comment updated successfully!');
     }
@@ -124,6 +158,12 @@ class CommentController extends Controller
 
         $comment->save();
 
+        // Load the user relationship for notification
+        $comment->load('user');
+
+        // Create notification for post owner (for replies too)
+        $this->notificationService->createCommentNotification($comment, $post);
+
         // Record the reply activity using the service
         VisitService::recordActivity(
             $request,
@@ -137,6 +177,22 @@ class CommentController extends Controller
                 'parent_id' => $validated['parent_id'],
             ]
         );
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            // Load user votes if authenticated
+            if (auth()->check()) {
+                $comment->load(['votes' => function ($query) {
+                    $query->where('user_id', auth()->id());
+                }]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reply added successfully!',
+                'comment' => $comment->toArray(),
+            ]);
+        }
 
         return back()->with('success', 'Reply added successfully!');
     }

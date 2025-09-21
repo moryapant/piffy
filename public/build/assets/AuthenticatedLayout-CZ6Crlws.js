@@ -1,1 +1,0 @@
-import{_ as s}from"./Navbar-C9okvRBf.js";import{C as a,D as t,E as o,I as r,W as c}from"./vendor-core-CO7h4P2b.js";const n={class:"min-h-screen bg-gray-100"},_={class:"px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8"},d={__name:"AuthenticatedLayout",setup(m){return(e,p)=>(t(),a("div",n,[o(s),r("main",_,[c(e.$slots,"default")])]))}};export{d as _};

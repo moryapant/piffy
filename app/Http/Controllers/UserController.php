@@ -12,11 +12,6 @@ class UserController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
-    {
-        $this->middleware('auth')->except(['profile', 'show']);
-    }
-
     public function index(Request $request)
     {
         $query = User::with(['posts', 'comments'])
