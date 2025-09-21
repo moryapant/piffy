@@ -130,7 +130,7 @@ const props = defineProps({
 
     <!-- Banner and Header -->
     <div
-      class="overflow-hidden relative h-[300px] sm:h-[420px] lg:h-96 group"
+      class="overflow-hidden relative h-[300px] sm:h-[420px] lg:h-[500px] xl:h-[600px] group"
       @mouseenter="isHoveringCover = true"
       @mouseleave="isHoveringCover = false"
     >
