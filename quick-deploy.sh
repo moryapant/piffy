@@ -3,9 +3,13 @@
 echo "🚀 Quick Shared Hosting Deployment"
 echo "=================================="
 
-# Install dependencies (ignoring sodium requirement)
+# Check PHP version
+echo "🔍 Checking PHP version..."
+php -v | head -1
+
+# Install dependencies (ignoring platform requirements that might not be available)
 echo "📦 Installing PHP dependencies..."
-composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-sodium --ignore-platform-req=ext-zip
+composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-sodium --ignore-platform-req=ext-zip --ignore-platform-req=ext-gd --no-interaction
 
 # Clear all caches
 echo "🧹 Clearing caches..."
