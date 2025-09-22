@@ -34,7 +34,6 @@ const props = defineProps({
 onMounted(() => {
     // Automatically trigger Google sign-in when the component mounts
     signInWithGoogle().catch((error) => {
-        console.error('Google sign-in error:', error);
     });
 });
 </script>

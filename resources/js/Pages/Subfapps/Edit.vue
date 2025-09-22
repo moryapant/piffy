@@ -19,22 +19,16 @@ const form = useForm({
 const uploadedIcon = ref(null);
 const iconPreview = ref(props.subfapp.icon ? `/storage/${props.subfapp.icon}` : null);
 
-// Debug form state on mount
+// Initialize form state on mount
 onMounted(() => {
-    console.log('Form initialized:', {
-        display_name: form.display_name,
-        errors: form.errors,
-        hasErrors: Object.keys(form.errors).length > 0
-    });
+    // Form initialized
 });
 
 // Clear display_name error when user types
 watch(() => form.display_name, (newValue) => {
-    console.log('Display name changed:', newValue, 'Has error:', !!form.errors.display_name);
     if (form.errors.display_name && newValue && newValue.trim().length > 0) {
         // Force clear the specific error
         delete form.errors.display_name;
-        console.log('Cleared display_name error');
     }
 });
 
@@ -48,7 +42,7 @@ const handleIconUpload = (e) => {
         return;
     }
     
-    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+    // File selected for upload
     
     uploadedIcon.value = file;
     form.icon = file; // Set file in form
@@ -62,25 +56,16 @@ const handleIconUpload = (e) => {
     const reader = new FileReader();
     reader.onload = (e) => {
         iconPreview.value = e.target.result;
-        console.log('Icon preview created');
     };
     reader.readAsDataURL(file);
 };
 
 const submit = () => {
-    console.log('Submitting form with data:', {
-        display_name: form.display_name,
-        description: form.description,
-        icon: form.icon
-    });
-    
     // Clear all errors before submitting
     form.clearErrors();
     
     // If there's a file, we need to use FormData manually
     if (form.icon) {
-        console.log('File detected, creating FormData manually. File:', form.icon.name);
-        
         const formData = new FormData();
         formData.append('display_name', form.display_name || '');
         formData.append('description', form.description || '');
@@ -90,26 +75,25 @@ const submit = () => {
         // Use router.post with FormData
         router.post(route('subfapps.update', props.subfapp.id), formData, {
             onSuccess: () => {
-                console.log('Form submitted successfully');
+                // Form submitted successfully
             },
             onError: (errors) => {
-                console.log('Form submission errors:', errors);
+                // Handle form submission errors
             },
             onFinish: () => {
-                console.log('Form submission finished');
+                // Form submission finished
             }
         });
     } else {
-        console.log('No file, using regular form submission');
         form.patch(route('subfapps.update', props.subfapp.id), {
             onSuccess: () => {
-                console.log('Form submitted successfully');
+                // Form submitted successfully
             },
             onError: (errors) => {
-                console.log('Form submission errors:', errors);
+                // Handle form submission errors
             },
             onFinish: () => {
-                console.log('Form submission finished');
+                // Form submission finished
             }
         });
     }
@@ -162,7 +146,7 @@ const submit = () => {
                             Display Name
                             <button 
                                 type="button" 
-                                @click="() => { form.errors = {}; console.log('All errors cleared manually'); }" 
+                                @click="() => { form.errors = {}; }" 
                                 class="ml-2 text-xs text-blue-500 hover:text-blue-700"
                                 v-if="Object.keys(form.errors).length > 0"
                             >
@@ -181,10 +165,8 @@ const submit = () => {
                             required
                             placeholder="Community Display Name"
                             @input="(event) => { 
-                                console.log('Input event fired:', event.target.value, 'Form value:', form.display_name, 'Has error:', !!form.errors.display_name);
                                 if (form.errors.display_name && event.target.value && event.target.value.trim().length > 0) {
                                     delete form.errors.display_name;
-                                    console.log('Error cleared via input event');
                                 }
                             }"
                         />
@@ -193,7 +175,6 @@ const submit = () => {
                         </p>
                         <p v-if="form.errors.display_name" class="mt-1 text-sm text-red-500">
                             {{ form.errors.display_name }}
-                            <span class="ml-2 text-xs">(Debug: '{{ form.display_name }}')</span>
                         </p>
                     </div>
 

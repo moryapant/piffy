@@ -49,7 +49,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Visit tracking is handled by middleware - no need for client-side tracking
             // This prevents JSON parsing errors from missing /track-visit route
-            console.log('Page loaded:', window.location.pathname);
         });
     </script>
 </head>

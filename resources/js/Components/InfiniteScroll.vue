@@ -118,7 +118,6 @@ const loadMore = async () => {
       emit('items-updated', items.value)
     }
   } catch (error) {
-    console.error('Failed to load more items:', error)
     
     // Show user-friendly error message
     const errorMessage = document.createElement('div')

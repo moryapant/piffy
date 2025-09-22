@@ -557,7 +557,6 @@ const handleSubmit = async () => {
     emit('submit', formData)
     
   } catch (error) {
-    console.error('Error submitting form:', error)
   } finally {
     isSubmitting.value = false
   }

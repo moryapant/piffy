@@ -111,7 +111,6 @@ const fetchUnreadCount = async () => {
     const response = await axios.get('/api/notifications/unread-count')
     unreadCount.value = response.data.count
   } catch (error) {
-    console.error('Failed to fetch unread count:', error)
   }
 }
 

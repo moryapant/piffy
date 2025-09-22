@@ -46,15 +46,13 @@ const vote = (postId, voteType) => {
   voteForm.reset();
   // Ensure voteType is an integer
   voteForm.vote_type = parseInt(voteType);
-  console.log('Voting:', { postId, voteType: parseInt(voteType), originalType: voteType });
   voteForm.post(route("posts.vote", postId), {
     preserveScroll: true,
     onSuccess: () => {
-      console.log('Vote recorded successfully');
       window.dispatchEvent(new Event("post-voted"));
     },
     onError: (errors) => {
-      console.error('Error recording vote:', errors);
+      // Handle errors silently or with user-friendly notifications
     }
   });
 };
@@ -84,7 +82,6 @@ const sharePost = async () => {
     } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(window.location.href);
       // You could add a toast notification here if you have one
-      console.log('Link copied to clipboard');
     } else {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
@@ -93,16 +90,13 @@ const sharePost = async () => {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      console.log('Link copied to clipboard');
     }
   } catch (error) {
-    console.error('Error sharing:', error);
     // Fallback to clipboard
     try {
       await navigator.clipboard.writeText(window.location.href);
-      console.log('Link copied to clipboard');
     } catch (clipboardError) {
-      console.error('Clipboard fallback failed:', clipboardError);
+      // Handle clipboard errors silently
     }
   }
 };

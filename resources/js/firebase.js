@@ -38,7 +38,6 @@ try {
         prompt: 'select_account'
     });
 } catch (error) {
-    console.error('Firebase initialization error:', error);
     throw error;
 }
 
@@ -72,7 +71,6 @@ export const signInWithGoogle = async () => {
         const data = await response.json();
         return data;
     } catch (error) {
-        console.error('Google sign-in error:', error);
         throw error;
     }
 };
@@ -89,7 +87,6 @@ export const signOut = async () => {
     try {
         await auth.signOut();
     } catch (error) {
-        console.error('Sign out error:', error);
         throw error;
     }
 };

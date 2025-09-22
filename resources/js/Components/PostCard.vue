@@ -15,7 +15,13 @@
         <!-- Post Meta -->
         <div class="flex-grow">
           <div class="flex flex-wrap gap-1 sm:gap-2 items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-            <span class="font-medium text-gray-900 dark:text-white">{{ post.user.name }}</span>
+            <Link 
+              :href="route('users.profile', post.user.id)"
+              class="font-medium text-gray-900 dark:text-white hover:text-blue-600 transition-colors"
+              @click.stop
+            >
+              {{ post.user.name }}
+            </Link>
             <span class="text-gray-400 dark:text-gray-500">•</span>
             <span>{{ formatDate(post.created_at) }}</span>
           </div>
@@ -30,13 +36,14 @@
             :href="route('posts.edit', post.id)"
             class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             title="Edit post"
+            @click.stop
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </Link>
           <button 
-            @click="showDeleteConfirm = true"
+            @click.stop="showDeleteConfirm = true"
             class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
             title="Delete post"
           >
@@ -49,32 +56,26 @@
 
       <!-- Post Content -->
       <div class="space-y-4">
-        <!-- Title -->
-        <h2
-          class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white transition-colors md:text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-tight"
-        >
-          {{ post.title }}
-        </h2>
-
-        <!-- Content -->
-        <div
-          class="text-sm text-gray-600 dark:text-gray-300 sm:text-base line-clamp-3 sm:line-clamp-none"
-          v-html="post.content"
-        ></div>
-
-        <!-- Images -->
-        <div v-if="post.images?.length" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 sm:mt-4">
-          <div
-            v-for="image in post.images"
-            :key="image.id"
-            class="overflow-hidden relative bg-gray-100 rounded-lg aspect-video"
+        <!-- Clickable Title and Content (links to post show page) -->
+        <Link :href="route('posts.show', post.id)" class="block">
+          <!-- Title -->
+          <h2
+            class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white transition-colors md:text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-tight"
           >
-            <img
-              :src="image.url"
-              alt=""
-              class="object-cover absolute inset-0 w-full h-full"
-            />
-          </div>
+            {{ post.title }}
+          </h2>
+
+          <!-- Content -->
+          <div
+            v-if="post.content"
+            class="text-sm text-gray-600 dark:text-gray-300 sm:text-base line-clamp-3 sm:line-clamp-none mt-2"
+            v-html="post.content"
+          ></div>
+        </Link>
+
+        <!-- Images (opens gallery modal, not post show page) -->
+        <div v-if="post.images?.length" class="mt-3 sm:mt-4">
+          <ImageGallery :images="post.images" />
         </div>
       </div>
 
@@ -154,6 +155,7 @@
 <script setup>
 import { useForm, Link, router } from "@inertiajs/vue3";
 import PostInteractions from "@/Components/PostInteractions.vue";
+import ImageGallery from "@/Components/ImageGallery.vue";
 import { ref } from 'vue';
 import {
   TransitionRoot,

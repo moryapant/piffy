@@ -30,7 +30,6 @@ const sampleContent3 = ref({
 })
 
 const handleVote = (contentId, voteType) => {
-  console.log(`Vote: Content ${contentId}, Type: ${voteType}`)
   // In real app, this would make an API call
 }
 </script>

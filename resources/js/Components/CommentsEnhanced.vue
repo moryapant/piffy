@@ -95,7 +95,6 @@ const voteOnComment = async (commentId, voteType) => {
       }
     }
   } catch (error) {
-    console.error('Voting failed:', error);
   }
 };
 
@@ -133,7 +132,6 @@ const submitComment = async () => {
       emit('comments-updated', commentsData.value.length);
     }
   } catch (error) {
-    console.error('Error submitting comment:', error);
   } finally {
     isSubmittingComment.value = false;
   }
@@ -162,7 +160,6 @@ const submitReply = async (parentId) => {
       emit('comments-updated', commentsData.value.length);
     }
   } catch (error) {
-    console.error('Error submitting reply:', error);
   } finally {
     isSubmittingReply.value = false;
   }
@@ -195,7 +192,6 @@ const submitEdit = async (commentId) => {
       editForm.reset();
     }
   } catch (error) {
-    console.error('Error updating comment:', error);
   }
 };
 

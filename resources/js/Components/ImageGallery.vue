@@ -38,7 +38,11 @@ const currentImageIndex = computed(() => {
   );
 });
 
-const openImage = (image) => {
+const openImage = (image, event = null) => {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   selectedImage.value = image;
   nextTick(() => {
     if (modalRef.value) {
@@ -47,17 +51,29 @@ const openImage = (image) => {
   });
 };
 
-const closeImage = () => {
+const closeImage = (event = null) => {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   selectedImage.value = null;
 };
 
-const previousImage = () => {
+const previousImage = (event = null) => {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   if (currentImageIndex.value > 0) {
     selectedImage.value = processedImages.value[currentImageIndex.value - 1];
   }
 };
 
-const nextImage = () => {
+const nextImage = (event = null) => {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   if (currentImageIndex.value < processedImages.value.length - 1) {
     selectedImage.value = processedImages.value[currentImageIndex.value + 1];
   }
@@ -108,7 +124,7 @@ onUnmounted(() => {
           'h-[500px]': images.length === 1,
           'h-[250px]': images.length >= 2,
         }"
-        @click="openImage(image)"
+        @click.stop="openImage(image, $event)"
       >
         <div class="relative flex items-center justify-center w-full h-full bg-black">
           <template v-if="image.type === 'video'">
@@ -164,10 +180,11 @@ onUnmounted(() => {
     </div>
 
     <!-- Full Screen Modal -->
-    <div
-      v-if="selectedImage"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm"
-      @click="closeImage"
+    <Teleport to="body">
+      <div
+        v-if="selectedImage"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm"
+        @click.self="closeImage($event)"
       @keydown.left="previousImage"
       @keydown.right="nextImage"
       tabindex="0"
@@ -176,7 +193,7 @@ onUnmounted(() => {
       <!-- Close Button -->
       <button
         class="absolute text-white transition-colors duration-200 top-6 right-6 hover:text-gray-300 focus:outline-none"
-        @click="closeImage"
+        @click.stop="closeImage($event)"
       >
         <svg
           class="w-8 h-8"
@@ -197,7 +214,7 @@ onUnmounted(() => {
       <button
         v-if="currentImageIndex > 0"
         class="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
-        @click.stop="previousImage"
+        @click.stop="previousImage($event)"
       >
         <svg
           class="w-5 h-5"
@@ -218,7 +235,7 @@ onUnmounted(() => {
       <button
         v-if="currentImageIndex < images.length - 1"
         class="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
-        @click.stop="nextImage"
+        @click.stop="nextImage($event)"
       >
         <svg
           class="w-5 h-5"
@@ -268,6 +285,7 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 

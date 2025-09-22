@@ -33,7 +33,6 @@ const props = defineProps({
 
 // Handle infinite scroll load more
 const handleLoadMore = ({ newItems, totalItems }) => {
-  console.log(`Loaded ${newItems.length} new posts. Total: ${totalItems.length}`);
   // Update the reactive posts data with new items
   if (postsData.value && postsData.value.data) {
     postsData.value.data = totalItems;
@@ -73,7 +72,6 @@ const postsData = ref(props.posts);
 
 const vote = async (postId, voteType) => {
   try {
-    console.log('Voting:', { postId, voteType });
     
     // Make AJAX request to vote endpoint
     const response = await axios.post(route("posts.vote", postId), {
@@ -89,10 +87,8 @@ const vote = async (postId, voteType) => {
     if (response.data.success) {
       // Update the post data reactively
       updatePostVoteData(postId, response.data);
-      console.log('Vote recorded successfully');
     }
   } catch (error) {
-    console.error('Error recording vote:', error);
     // Show error notification if needed
   }
 };
@@ -178,7 +174,6 @@ const focusSearch = () => {
 const handleRandomCommunityClick = (event) => {
   event.preventDefault();
   event.stopPropagation();
-  console.log('Random community button clicked');
   visitRandomCommunity();
 };
 
@@ -194,7 +189,6 @@ const fetchRecentActivities = async () => {
     const response = await axios.get('/api/recent-activity');
     recentActivities.value = response.data.activities;
   } catch (error) {
-    console.error('Failed to fetch recent activities:', error);
     // Set some fallback data
     recentActivities.value = [];
   } finally {
@@ -208,7 +202,6 @@ const fetchTrendingPosts = async () => {
     const response = await axios.get('/api/trending-posts');
     trendingPosts.value = response.data.posts;
   } catch (error) {
-    console.error('Failed to fetch trending posts:', error);
     // Fallback to first 5 posts from main feed
     trendingPosts.value = postsData.value.data.slice(0, 5).map((post, index) => ({
       id: post.id,
@@ -226,7 +219,6 @@ const fetchTrendingPosts = async () => {
 
 const handleFlairClick = (flair) => {
   // Navigate to filtered view by flair (you can implement this later)
-  console.log('Flair clicked:', flair);
   // router.get(route('home', { flair: flair.id }));
 };
 

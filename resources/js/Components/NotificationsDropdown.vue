@@ -164,7 +164,6 @@ const fetchNotifications = async () => {
     notifications.value = response.data.notifications
     unreadCount.value = response.data.unread_count
   } catch (error) {
-    console.error('Failed to fetch notifications:', error)
   } finally {
     isLoading.value = false
   }
@@ -175,7 +174,6 @@ const fetchUnreadCount = async () => {
     const response = await axios.get('/api/notifications/unread-count')
     unreadCount.value = response.data.count
   } catch (error) {
-    console.error('Failed to fetch unread count:', error)
   }
 }
 
@@ -185,7 +183,6 @@ const markAllAsRead = async () => {
     notifications.value = notifications.value.map(n => ({ ...n, is_read: true }))
     unreadCount.value = 0
   } catch (error) {
-    console.error('Failed to mark all as read:', error)
   }
 }
 
@@ -197,7 +194,6 @@ const handleNotificationClick = async (notification) => {
       notification.is_read = true
       unreadCount.value = Math.max(0, unreadCount.value - 1)
     } catch (error) {
-      console.error('Failed to mark as read:', error)
     }
   }
 

@@ -45,14 +45,13 @@ const vote = (postId, voteType) => {
   form.reset();
   // Ensure voteType is an integer
   form.vote_type = parseInt(voteType);
-  console.log('Voting:', { postId, voteType: parseInt(voteType), originalType: voteType });
   form.post(route("posts.vote", postId), {
     preserveScroll: true,
     onSuccess: () => {
-      console.log('Vote recorded successfully');
+      // Vote recorded successfully
     },
     onError: (errors) => {
-      console.error('Error recording vote:', errors);
+      // Handle errors silently
     }
   });
 };
