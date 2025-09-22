@@ -81,77 +81,77 @@ const loadMore = async () => {
     
     const nextPage = currentPage.value + 1
     
-    // Handle both relative paths and full URLs
-    let baseUrl
-    if (props.loadMoreUrl.startsWith('http://') || props.loadMoreUrl.startsWith('https://')) {
-      // It's already a full URL
-      baseUrl = props.loadMoreUrl
-    } else {
-      // It's a relative path, prepend origin
-      baseUrl = window.location.origin + (props.loadMoreUrl.startsWith('/') ? props.loadMoreUrl : '/' + props.loadMoreUrl)
-    }
+    // Build query parameters
+    const queryParams = { page: nextPage }
     
-    const url = new URL(baseUrl)
-    url.searchParams.set('page', nextPage)
-    
-    // Preserve existing query parameters
+    // Preserve existing query parameters from current URL
     const currentParams = new URLSearchParams(window.location.search)
     for (const [key, value] of currentParams) {
       if (key !== 'page') {
-        url.searchParams.set(key, value)
+        queryParams[key] = value
       }
     }
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
+    // Use Inertia's router for the request to handle CSRF and Laravel-specific needs
+    router.get(props.loadMoreUrl, queryParams, {
+      preserveState: true,
+      preserveScroll: true,
+      only: ['posts'],
+      onSuccess: (page) => {
+        // Extract the paginated data from the response
+        const responseData = page.props.posts || page.props.postsData || page.props.data
+        
+        if (responseData && responseData.data && Array.isArray(responseData.data)) {
+          // Append new items to existing items
+          const newItems = responseData.data
+          items.value = [...items.value, ...newItems]
+          
+          // Update pagination info
+          currentPage.value = responseData.current_page || nextPage
+          lastPage.value = responseData.last_page || lastPage.value
+          
+          emit('load-more', { newItems, totalItems: items.value })
+          emit('items-updated', items.value)
+        } else {
+          console.error('Invalid response structure:', responseData)
+          showErrorMessage()
+        }
       },
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    
-    if (data.data && Array.isArray(data.data)) {
-      // Append new items to existing items
-      const newItems = data.data
-      items.value = [...items.value, ...newItems]
-      
-      // Update pagination info
-      currentPage.value = data.current_page || nextPage
-      lastPage.value = data.last_page || lastPage.value
-      
-      emit('load-more', { newItems, totalItems: items.value })
-      emit('items-updated', items.value)
-    }
-  } catch (error) {
-    
-    // Show user-friendly error message
-    const errorMessage = document.createElement('div')
-    errorMessage.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50'
-    errorMessage.innerHTML = `
-      <div class="flex items-center space-x-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>Failed to load more content. Please try again.</span>
-      </div>
-    `
-    document.body.appendChild(errorMessage)
-    
-    // Remove error message after 5 seconds
-    setTimeout(() => {
-      if (document.body.contains(errorMessage)) {
-        document.body.removeChild(errorMessage)
+      onError: (errors) => {
+        console.error('Pagination error:', errors)
+        showErrorMessage()
+      },
+      onFinish: () => {
+        loading.value = false
       }
-    }, 5000)
-  } finally {
+    })
+  } catch (error) {
+    console.error('Load more error:', error)
+    showErrorMessage()
     loading.value = false
   }
+}
+
+// Helper function to show error messages
+const showErrorMessage = () => {
+  const errorMessage = document.createElement('div')
+  errorMessage.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50'
+  errorMessage.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>Failed to load more content. Please try again.</span>
+    </div>
+  `
+  document.body.appendChild(errorMessage)
+  
+  // Remove error message after 5 seconds
+  setTimeout(() => {
+    if (document.body.contains(errorMessage)) {
+      document.body.removeChild(errorMessage)
+    }
+  }, 5000)
 }
 
 // Set up intersection observer for auto-loading

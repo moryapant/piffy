@@ -619,7 +619,7 @@
     ]
   },
   "resources/js/Pages/Welcome.vue": {
-    "file": "assets/Welcome-AY1MGx33.js",
+    "file": "assets/Welcome-Ctnd-AWF.js",
     "name": "Welcome",
     "src": "resources/js/Pages/Welcome.vue",
     "isDynamicEntry": true,
@@ -639,11 +639,11 @@
       "_TagIcon-BDcVF3gv.js"
     ],
     "css": [
-      "assets/Welcome-BRB6ZUnH.css"
+      "assets/Welcome-D3yGmfCE.css"
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-rmxYTBxJ.js",
+    "file": "assets/app-C2-V5X6_.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
