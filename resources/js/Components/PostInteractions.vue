@@ -1,6 +1,7 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
 import { computed } from 'vue';
+import SocialShare from '@/Components/SocialShare.vue';
 
 const props = defineProps({
   // Post data
@@ -124,6 +125,13 @@ const hasDownvoted = computed(() => userVote.value === -1);
         </span>
       </span>
     </Link>
+
+    <!-- Social Share Component -->
+    <SocialShare 
+      :post="post" 
+      :showLabels="true"
+      size="md"
+    />
 
     <!-- Views Count -->
     <div class="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 lg:px-4 lg:py-2 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 select-none transition-colors duration-200">

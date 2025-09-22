@@ -80,7 +80,18 @@ const loadMore = async () => {
     loading.value = true
     
     const nextPage = currentPage.value + 1
-    const url = new URL(window.location.origin + props.loadMoreUrl)
+    
+    // Handle both relative paths and full URLs
+    let baseUrl
+    if (props.loadMoreUrl.startsWith('http://') || props.loadMoreUrl.startsWith('https://')) {
+      // It's already a full URL
+      baseUrl = props.loadMoreUrl
+    } else {
+      // It's a relative path, prepend origin
+      baseUrl = window.location.origin + (props.loadMoreUrl.startsWith('/') ? props.loadMoreUrl : '/' + props.loadMoreUrl)
+    }
+    
+    const url = new URL(baseUrl)
     url.searchParams.set('page', nextPage)
     
     // Preserve existing query parameters
