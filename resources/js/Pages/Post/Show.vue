@@ -274,7 +274,7 @@ const sharePost = async () => {
 
               <!-- Images -->
               <div v-if="post.images && post.images.length" class="mb-6 -mx-4 sm:-mx-6">
-                <ImageGallery :images="post.images" />
+                <ImageGallery :images="post.images" :post-id="post.id" />
               </div>
 
               <!-- Content Body -->

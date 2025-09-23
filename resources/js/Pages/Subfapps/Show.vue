@@ -597,7 +597,7 @@ const props = defineProps({
 
                   <!-- Image Gallery -->
                   <div v-if="post.images?.length" class="rounded-xl overflow-hidden">
-                    <ImageGallery :images="post.images" />
+                    <ImageGallery :images="post.images" :post-id="post.id" />
                   </div>
                 </div>
 

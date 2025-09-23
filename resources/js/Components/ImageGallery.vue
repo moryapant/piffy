@@ -1,10 +1,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
+import axios from 'axios';
 
 const props = defineProps({
   images: {
     type: Array,
     required: true,
+  },
+  postId: {
+    type: Number,
+    required: false,
   },
 });
 
@@ -38,12 +43,33 @@ const currentImageIndex = computed(() => {
   );
 });
 
+// Track image view
+const trackImageView = async () => {
+  if (props.postId) {
+    try {
+      await axios.post(route('posts.track-image-view', props.postId), {}, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track image view:', error);
+    }
+  }
+};
+
 const openImage = (image, event = null) => {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
   selectedImage.value = image;
+  
+  // Track the view when image is opened
+  trackImageView();
+  
   nextTick(() => {
     if (modalRef.value) {
       modalRef.value.focus();
@@ -183,72 +209,53 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="selectedImage"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
         @click.self="closeImage($event)"
-      @keydown.left="previousImage"
-      @keydown.right="nextImage"
-      tabindex="0"
-      ref="modalRef"
-    >
-      <!-- Close Button -->
-      <button
-        class="absolute text-white transition-colors duration-200 top-6 right-6 hover:text-gray-300 focus:outline-none"
-        @click.stop="closeImage($event)"
+        @keydown.left="previousImage"
+        @keydown.right="nextImage"
+        tabindex="0"
+        ref="modalRef"
       >
-        <svg
-          class="w-8 h-8"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
+        <!-- Top Header Bar - Reddit Style -->
+        <div class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 md:p-6 bg-gradient-to-b from-black/70 to-transparent">
+          <!-- Left side - Image counter -->
+          <div v-if="images.length > 1" class="text-white text-sm md:text-base font-medium">
+            {{ currentImageIndex + 1 }} of {{ images.length }}
+          </div>
+          <div v-else class="text-white text-sm md:text-base font-medium opacity-60">
+            Image
+          </div>
+          
+          <!-- Right side - Close button -->
+          <button
+            class="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 touch-manipulation"
+            @click.stop="closeImage($event)"
+          >
+            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
       <!-- Previous Arrow (Mobile & Desktop) -->
       <button
         v-if="currentImageIndex > 0"
-        class="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
+        class="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 p-3 md:p-4 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
         @click.stop="previousImage($event)"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          stroke-width="2.5"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
 
       <!-- Next Arrow (Mobile & Desktop) -->
       <button
         v-if="currentImageIndex < images.length - 1"
-        class="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
+        class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 p-3 md:p-4 text-white bg-black/50 hover:bg-black/70 rounded-full backdrop-blur-sm transition-all duration-200 focus:outline-none active:scale-95 z-20 touch-manipulation"
         @click.stop="nextImage($event)"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          stroke-width="2.5"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
+        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </button>
 
@@ -276,12 +283,23 @@ onUnmounted(() => {
             @click.stop
           />
         </template>
-        <!-- Image Counter -->
-        <div
-          v-if="images.length > 1"
-          class="absolute px-4 py-2 text-sm font-medium text-white -translate-x-1/2 rounded-full bottom-4 left-1/2 bg-black/50 backdrop-blur-sm"
-        >
-          {{ currentImageIndex + 1 }} / {{ images.length }}
+        <!-- Bottom Actions Bar - Reddit Style -->
+        <div v-if="images.length > 1" class="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/70 to-transparent">
+          <div class="flex items-center justify-center space-x-4">
+            <!-- Navigation dots -->
+            <div class="flex items-center space-x-1">
+              <button
+                v-for="(_, index) in images"
+                :key="index"
+                @click="selectedImage = processedImages[index]"
+                class="w-2 h-2 rounded-full transition-all duration-200"
+                :class="{
+                  'bg-white': index === currentImageIndex,
+                  'bg-white/40 hover:bg-white/60': index !== currentImageIndex
+                }"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -540,6 +540,20 @@ class PostController extends Controller
     }
 
     /**
+     * Track image view for a post.
+     */
+    public function trackImageView(Post $post, Request $request)
+    {
+        // Track the image view (similar to post view but for images)
+        $this->trackPostView($post, $request);
+        
+        return response()->json([
+            'success' => true,
+            'views_count' => $post->fresh()->views_count
+        ]);
+    }
+
+    /**
      * Get trending posts for the API.
      */
     public function trendingPosts(Request $request)

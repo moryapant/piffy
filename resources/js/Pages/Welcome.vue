@@ -706,7 +706,7 @@ onMounted(() => {
                             class="block hover:no-underline"
                           >
                             <div class="relative rounded-md overflow-hidden bg-gray-100">
-                              <ImageGallery :images="post.images" class="max-h-[400px] w-full object-cover" />
+                              <ImageGallery :images="post.images" :post-id="post.id" class="max-h-[400px] w-full object-cover" />
                             </div>
                           </Link>
                         </div>

@@ -70,6 +70,9 @@ Route::get('/posts', [PostController::class, 'index'])->name('posts.index')->mid
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show')->middleware(\App\Http\Middleware\SimpleVisitMiddleware::class);
 Route::get('/api/trending-posts', [PostController::class, 'trendingPosts'])->name('posts.trending');
 
+// Image view tracking route
+Route::post('/posts/{post}/track-image-view', [PostController::class, 'trackImageView'])->name('posts.track-image-view');
+
 // Auth required post actions
 Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/vote', [PostVoteController::class, 'vote'])->name('posts.vote');
