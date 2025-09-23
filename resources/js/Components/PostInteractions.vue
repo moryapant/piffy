@@ -9,7 +9,7 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  // Show share button (future feature)
+  // Show share button - now defaults to false
   showShare: {
     type: Boolean,
     default: false
@@ -128,6 +128,7 @@ const hasDownvoted = computed(() => userVote.value === -1);
 
     <!-- Social Share Component -->
     <SocialShare 
+      v-if="showShare"
       :post="post" 
       :showLabels="true"
       size="md"

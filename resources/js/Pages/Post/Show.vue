@@ -288,6 +288,7 @@ const sharePost = async () => {
               <div class="border-t border-gray-200 pt-6">
                 <PostInteractions 
                   :post="post" 
+                  :showShare="true"
                   @vote="vote" 
                 />
               </div>
