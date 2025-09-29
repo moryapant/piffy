@@ -259,6 +259,7 @@ class SubfappController extends Controller
         $validated = $request->validate([
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'type' => 'required|in:public,restricted,private,hidden',
             'icon' => 'nullable|image|max:2048|mimes:jpeg,jpg,png,webp',
         ]);
 

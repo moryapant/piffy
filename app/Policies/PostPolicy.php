@@ -12,6 +12,18 @@ class PostPolicy
     use HandlesAuthorization;
 
     /**
+     * Perform pre-authorization checks.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->is_admin == 1) {
+            return true;
+        }
+
+        return null;
+    }
+
+    /**
      * Determine whether the user can create a post in the given subfapp.
      */
     public function create(User $user, Subfapp $subfapp): bool
@@ -24,7 +36,21 @@ class PostPolicy
      */
     public function update(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id;
+        $isOwner = $user->id === $post->user_id;
+        $isAdmin = $user->is_admin == 1 || $user->is_admin === true;
+        $result = $isOwner || $isAdmin;
+
+        // Debug logging
+        \Log::info('PostPolicy::update debug', [
+            'user_id' => $user->id,
+            'post_user_id' => $post->user_id,
+            'is_admin' => $user->is_admin,
+            'is_owner' => $isOwner,
+            'is_admin_explicit' => $isAdmin,
+            'result' => $result
+        ]);
+
+        return $result;
     }
 
     /**
@@ -32,6 +58,6 @@ class PostPolicy
      */
     public function delete(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id;
+        return $user->id === $post->user_id || $user->is_admin == 1 || $user->is_admin === true;
     }
 }

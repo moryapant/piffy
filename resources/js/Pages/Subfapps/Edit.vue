@@ -13,6 +13,7 @@ const props = defineProps({
 const form = useForm({
     display_name: props.subfapp.display_name || '',
     description: props.subfapp.description || '',
+    type: props.subfapp.type || 'public',
     icon: null,
 });
 
@@ -69,6 +70,7 @@ const submit = () => {
         const formData = new FormData();
         formData.append('display_name', form.display_name || '');
         formData.append('description', form.description || '');
+        formData.append('type', form.type || 'public');
         formData.append('icon', form.icon);
         formData.append('_method', 'PATCH');
         
@@ -211,6 +213,38 @@ const submit = () => {
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Community Type -->
+                    <div>
+                        <label for="type" class="block text-base font-medium text-gray-900 dark:text-gray-100 mb-2">Community Type</label>
+                        <select
+                            id="type"
+                            v-model="form.type"
+                            class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm focus:ring-blue-500 focus:border-blue-500 py-3"
+                            :class="{ 'border-red-500': form.errors.type }"
+                            required
+                        >
+                            <option value="public">Public</option>
+                            <option value="restricted">Restricted</option>
+                            <option value="private">Private</option>
+                            <option value="hidden">Hidden</option>
+                        </select>
+                        <div class="mt-2 text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                            <div v-if="form.type === 'public'" class="text-green-600 dark:text-green-400">
+                                <strong>Public:</strong> Anyone can view and join this community
+                            </div>
+                            <div v-if="form.type === 'restricted'" class="text-yellow-600 dark:text-yellow-400">
+                                <strong>Restricted:</strong> Anyone can view, but must request to join
+                            </div>
+                            <div v-if="form.type === 'private'" class="text-orange-600 dark:text-orange-400">
+                                <strong>Private:</strong> Only members can view and must be invited to join
+                            </div>
+                            <div v-if="form.type === 'hidden'" class="text-red-600 dark:text-red-400">
+                                <strong>Hidden:</strong> Only members can view, invisible to non-members
+                            </div>
+                        </div>
+                        <p v-if="form.errors.type" class="mt-1 text-sm text-red-500">{{ form.errors.type }}</p>
                     </div>
 
                     <!-- Community Description -->
