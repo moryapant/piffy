@@ -30,8 +30,8 @@
           </div>
         </div>
 
-        <!-- Edit/Delete Buttons (only for post owner) -->
-        <div v-if="$page.props.auth.user && post.user.id === $page.props.auth.user.id" class="flex items-center space-x-2">
+        <!-- Edit/Delete Buttons (for post owner and admin) -->
+        <div v-if="$page.props.auth.user && (post.user.id === $page.props.auth.user.id || $page.props.auth.user.is_admin)" class="flex items-center space-x-2">
           <Link 
             :href="route('posts.edit', post.id)"
             class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"

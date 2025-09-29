@@ -9,6 +9,18 @@ use Illuminate\Auth\Access\Response;
 class SubfappPolicy
 {
     /**
+     * Perform pre-authorization checks.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        // Allow admins to do everything
+        if ($user->is_admin == 1) {
+            return true;
+        }
+
+        return null;
+    }
+    /**
      * Determine whether the user can view any models.
      */
     public function viewAny(?User $user): bool
@@ -37,7 +49,7 @@ class SubfappPolicy
      */
     public function update(User $user, Subfapp $subfapp): bool
     {
-        return $user->id === $subfapp->created_by;
+        return $user->id === $subfapp->created_by || $user->is_admin == 1;
     }
 
     /**
@@ -45,7 +57,7 @@ class SubfappPolicy
      */
     public function delete(User $user, Subfapp $subfapp): bool
     {
-        return $user->id === $subfapp->created_by;
+        return $user->id === $subfapp->created_by || $user->is_admin == 1;
     }
 
     /**

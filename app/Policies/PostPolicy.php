@@ -16,6 +16,7 @@ class PostPolicy
      */
     public function before(User $user, string $ability): ?bool
     {
+        // Allow admins to do everything
         if ($user->is_admin == 1) {
             return true;
         }
@@ -36,21 +37,8 @@ class PostPolicy
      */
     public function update(User $user, Post $post): bool
     {
-        $isOwner = $user->id === $post->user_id;
-        $isAdmin = $user->is_admin == 1 || $user->is_admin === true;
-        $result = $isOwner || $isAdmin;
-
-        // Debug logging
-        \Log::info('PostPolicy::update debug', [
-            'user_id' => $user->id,
-            'post_user_id' => $post->user_id,
-            'is_admin' => $user->is_admin,
-            'is_owner' => $isOwner,
-            'is_admin_explicit' => $isAdmin,
-            'result' => $result
-        ]);
-
-        return $result;
+        // Check if user is admin or post owner
+        return $user->is_admin == 1 || $user->id === $post->user_id;
     }
 
     /**
@@ -58,6 +46,7 @@ class PostPolicy
      */
     public function delete(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id || $user->is_admin == 1 || $user->is_admin === true;
+        // Check if user is admin or post owner
+        return $user->is_admin == 1 || $user->id === $post->user_id;
     }
 }

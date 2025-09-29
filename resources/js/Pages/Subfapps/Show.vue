@@ -140,7 +140,7 @@ const props = defineProps({
           {
             'opacity-90':
               isHoveringCover &&
-              $page.props.auth.user?.id === subfapp.created_by,
+              $page.props.auth.user?.id === subfapp.created_by || $page.props.auth.user?.is_admin,
           },
         ]"
         :style="
@@ -151,7 +151,7 @@ const props = defineProps({
       ></div>
       <!-- Cover Update Button (Only visible to creator when hovering) -->
       <div
-        v-if="$page.props.auth.user?.id === subfapp.created_by"
+        v-if="$page.props.auth.user?.id === subfapp.created_by || $page.props.auth.user?.is_admin"
         :class="[
           'absolute inset-0 flex items-center justify-center transition-opacity duration-300',
           isHoveringCover ? 'opacity-100' : 'opacity-0',
@@ -243,7 +243,7 @@ const props = defineProps({
 
               <!-- Avatar Update Button (Only visible to creator when hovering) -->
               <div
-                v-if="$page.props.auth.user?.id === subfapp.created_by"
+                v-if="$page.props.auth.user?.id === subfapp.created_by || $page.props.auth.user?.is_admin"
                 :class="[
                   'absolute inset-0 flex items-center justify-center bg-black/50 rounded-full transition-opacity duration-200',
                   isHoveringAvatar ? 'opacity-100' : 'opacity-0',
@@ -323,7 +323,7 @@ const props = defineProps({
             <!-- Desktop Join/Leave Button -->
             <div class="hidden items-center space-x-3 md:flex">
               <!-- Owner Controls -->
-              <div v-if="$page.props.auth.user?.id === subfapp.created_by" class="flex items-center space-x-2">
+              <div v-if="$page.props.auth.user?.id === subfapp.created_by || $page.props.auth.user?.is_admin" class="flex items-center space-x-2">
                 <Link
                   :href="route('subfapps.edit', subfapp.id)"
                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"

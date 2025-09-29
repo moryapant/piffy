@@ -242,8 +242,8 @@ const sharePost = async () => {
                   </div>
                 </div>
                 
-                <!-- Post Owner Actions -->
-                <div v-if="$page.props.auth.user && post.user.id === $page.props.auth.user.id" class="flex items-center space-x-1">
+                <!-- Post Owner/Admin Actions -->
+                <div v-if="$page.props.auth.user && (post.user.id === $page.props.auth.user.id || $page.props.auth.user.is_admin)" class="flex items-center space-x-1">
                   <Link :href="route('posts.edit', post.id)" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors" title="Edit post">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
